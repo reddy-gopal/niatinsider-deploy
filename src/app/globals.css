@@ -1,0 +1,253 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 0 71% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 215 28% 17% / 0.7;
+    --accent: 45 96% 48%;
+    --accent-foreground: 215 28% 17%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 28% 17% / 0.1;
+    --input: 215 28% 17% / 0.1;
+    --ring: 0 71% 35%;
+    --radius: 0.5rem;
+    
+    /* NIAT Insider Custom Colors */
+    --niat-maroon: #991b1b;
+    --niat-maroon-light: #b91c1c;
+    --niat-maroon-dark: #7f1d1d;
+    --niat-purple: #7678ed;
+    --niat-purple-light: #9496f0;
+    --niat-purple-dark: #5a5cb8;
+    --niat-yellow: #f7b801;
+    --niat-orange: #f18701;
+    --niat-red-orange: #f35b04;
+    --niat-navbar-bg: #fff8eb;
+    --niat-section-bg: #fbf2f3;
+    --niat-text: #000000;
+    --niat-text-muted: #000000;
+    --niat-border: rgba(30, 41, 59, 0.1);
+    --niat-hero-from: #220000;
+    --niat-hero-to: #974039;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-white text-black antialiased overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-playfair {
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .font-dm-sans {
+    font-family: 'DM Sans', sans-serif;
+  }
+  
+  .text-muted {
+    color: #000000;
+  }
+  
+  .bg-navbar {
+    background-color: #fff8eb;
+  }
+  
+  .bg-section {
+    background-color: #fbf2f3;
+  }
+  
+  .shadow-soft {
+    box-shadow: 0 2px 8px rgba(30, 41, 59, 0.06);
+  }
+  
+  .shadow-card {
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+  }
+  
+  .hero-gradient {
+    background: linear-gradient(135deg, #220000 0%, #974039 100%);
+  }
+  
+  .btn-primary {
+    @apply bg-[#991b1b] text-white px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-primary:hover {
+    @apply bg-[#b91c1c];
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-[#991b1b] border border-[#991b1b] px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-secondary:hover {
+    @apply bg-[#fbf2f3];
+  }
+  
+  .tag-campus-life {
+    @apply bg-[#7678ed] text-white px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .tag-experiences {
+    @apply bg-[#f18701] text-white px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .tag-academics {
+    @apply bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .tag-how-to {
+    @apply bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .verified-badge {
+    @apply bg-teal-50 text-teal-600 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .niat-role-badge {
+    @apply bg-[#991b1b] text-white px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .article-card {
+    @apply bg-white shadow-card border-l-4 border-transparent hover:border-[#991b1b] transition-all;
+  }
+
+  /* Article body image cards: borderless, full-width; remove button (hidden in read-only) + img + caption */
+  .article-image-card {
+    position: relative;
+    margin: 24px 0;
+    display: block;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+  .article-image-card__img {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .article-image-card__remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .article-image-card:hover .article-image-card__remove {
+    opacity: 1;
+  }
+  .article-body-read-only .article-image-card__remove {
+    display: none;
+  }
+  /* Links in article body: blue so they’re clearly clickable */
+  .article-body-read-only a {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+  .article-body-read-only a:hover {
+    color: #1d4ed8;
+  }
+  .article-image-card__caption {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+    text-align: center;
+    outline: none;
+    min-height: 20px;
+  }
+  .article-image-card__caption:empty::before {
+    content: attr(data-placeholder);
+    color: #d1d5db;
+    pointer-events: none;
+  }
+
+  /* Body editor placeholder (e.g. Write Article page) */
+  .article-body-editor {
+    outline: none;
+    min-height: 300px;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Infinite scroll for Campus Life video strip */
+  @keyframes campus-life-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  .animate-campus-life-scroll {
+    animation: campus-life-scroll 45s linear infinite;
+  }
+  .animate-campus-life-scroll:hover {
+    animation-play-state: paused;
+  }
+}
