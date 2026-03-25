@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { usePathname, useRouter } from 'next/navigation';
 import { fetchMe, fetchFoundingEditorProfile, isOnboardingComplete } from '../lib/authApi';
 
 interface RequireOnboardingProps {
@@ -12,7 +14,8 @@ interface RequireOnboardingProps {
  * Redirects to /onboarding until profile is complete.
  */
 export default function RequireOnboarding({ children }: RequireOnboardingProps) {
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [status, setStatus] = useState<'loading' | 'allowed' | 'redirect'>('loading');
 
   useEffect(() => {
@@ -36,7 +39,14 @@ export default function RequireOnboarding({ children }: RequireOnboardingProps) 
         });
       })
       .catch(() => setStatus('allowed'));
-  }, [location.pathname]);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (status === 'redirect') {
+      const from = pathname || '/';
+      router.replace(`/onboarding?from=${encodeURIComponent(from)}`);
+    }
+  }, [status, pathname, router]);
 
   if (status === 'loading') {
     return (
@@ -46,9 +56,7 @@ export default function RequireOnboarding({ children }: RequireOnboardingProps) 
     );
   }
 
-  if (status === 'redirect') {
-    return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
-  }
+  if (status === 'redirect') return null;
 
   return <>{children}</>;
 }

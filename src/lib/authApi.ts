@@ -30,10 +30,14 @@ authApi.interceptors.response.use(
         try {
           const { data } = await axios.post<{ access: string }>(`${BASE}/api/token/refresh/`, { refresh });
           localStorage.setItem('niat_access', data.access);
+          document.cookie = `niat_access=${data.access}; path=/; max-age=86400`;
           if (original.headers) original.headers.Authorization = `Bearer ${data.access}`;
           return authApi(original);
         } catch {
           localStorage.removeItem('niat_access');
+          document.cookie = 'niat_access=; path=/; max-age=0';
+          document.cookie = 'niat_onboarded=; path=/; max-age=0';
+          document.cookie = 'niat_needs_onboarding=; path=/; max-age=0';
           localStorage.removeItem('niat_refresh');
         }
       }
@@ -166,10 +170,14 @@ export async function loginByUsernamePassword(
 
 export function setTokens(access: string, refresh: string): void {
   localStorage.setItem('niat_access', access);
+  document.cookie = `niat_access=${access}; path=/; max-age=86400`;
   localStorage.setItem('niat_refresh', refresh);
 }
 
 export function clearTokens(): void {
   localStorage.removeItem('niat_access');
+  document.cookie = 'niat_access=; path=/; max-age=0';
+  document.cookie = 'niat_onboarded=; path=/; max-age=0';
+  document.cookie = 'niat_needs_onboarding=; path=/; max-age=0';
   localStorage.removeItem('niat_refresh');
 }

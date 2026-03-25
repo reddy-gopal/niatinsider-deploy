@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+"use client";
+
+import Link from 'next/link';
 import { memo } from 'react';
 import { Star } from 'lucide-react';
 import type { Campus } from '../types';
@@ -10,7 +12,7 @@ interface CampusCardProps {
 function CampusCard({ campus }: CampusCardProps) {
   return (
     <Link
-      to={`/campus/${campus.slug}`}
+      href={`/campus/${campus.slug}`}
       className="block bg-section rounded-lg border border-transparent shadow-card overflow-hidden hover:shadow-lg hover:border-[#991b1b]/30 transition-all duration-200 will-change-transform hover:-translate-y-0.5"
     >
       {/* Campus Image Area */}

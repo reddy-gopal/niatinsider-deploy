@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+"use client";
+
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { usePublishedArticles } from '../hooks/useArticles';
 
@@ -34,7 +36,7 @@ export default function Footer({ loadGuides = true }: FooterProps) {
                 Ask Seniors
               </a>
               <Link
-                to="/contribute/write"
+                href="/contribute/write"
                 className="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/10 transition-colors"
               >
                 Write Article
@@ -46,9 +48,14 @@ export default function Footer({ loadGuides = true }: FooterProps) {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {/* Brand */}
           <div>
-            <div className="flex items-center mb-3">
-              <span className="font-display text-2xl font-bold text-white">NIAT</span>
-              <span className="font-body text-xl font-medium text-white/80 ml-1">Insider</span>
+            <div className="flex items-center gap-1.5 mb-3">
+              <img
+                src="/niat.svg"
+                alt="NIAT"
+                className="h-7 w-7 object-contain"
+              />
+              <span className="font-display text-2xl font-bold tracking-tight text-white">NIAT</span>
+              <span className="font-display text-xl font-bold tracking-tight text-white/90">Insider</span>
             </div>
             <p className="text-white/60 text-sm max-w-xs">
               Every NIAT campus. Mapped by students. Built to help students make smarter choices.
@@ -59,12 +66,12 @@ export default function Footer({ loadGuides = true }: FooterProps) {
           <div>
             <h3 className="font-display font-semibold text-white mb-3">Explore</h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <Link to="/" className="text-white/60 hover:text-white text-sm transition-colors">Home</Link>
-              <Link to="/about" className="text-white/60 hover:text-white text-sm transition-colors">About</Link>
-              <Link to="/campuses" className="text-white/60 hover:text-white text-sm transition-colors">Campuses</Link>
-              <Link to="/articles" className="text-white/60 hover:text-white text-sm transition-colors">Articles</Link>
+              <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors">Home</Link>
+              <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About</Link>
+              <Link href="/campuses" className="text-white/60 hover:text-white text-sm transition-colors">Campuses</Link>
+              <Link href="/articles" className="text-white/60 hover:text-white text-sm transition-colors">Articles</Link>
               <a href="/talk-to-seniors" className="text-white/60 hover:text-white text-sm transition-colors">Talk To Seniors</a>
-              <Link to={HOW_TO_GUIDES_URL} className="text-white/60 hover:text-white text-sm transition-colors">How-to Guides</Link>
+              <Link href={HOW_TO_GUIDES_URL} className="text-white/60 hover:text-white text-sm transition-colors">How-to Guides</Link>
             </div>
           </div>
 
@@ -75,7 +82,7 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               {guides.map((guide) => (
                 <li key={guide.id}>
                   <Link
-                    to={`/article/${guide.slug || guide.id}`}
+                    href={`/article/${guide.slug || guide.id}`}
                     className="text-white/60 hover:text-white text-sm transition-colors line-clamp-1"
                   >
                     {guide.title}
@@ -84,7 +91,7 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               ))}
               <li>
                 <Link
-                  to={HOW_TO_GUIDES_URL}
+                  href={HOW_TO_GUIDES_URL}
                   className="text-white/80 hover:text-white text-sm transition-colors inline-flex items-center"
                 >
                   View all guides →

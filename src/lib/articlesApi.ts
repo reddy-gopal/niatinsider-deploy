@@ -25,10 +25,14 @@ articlesApi.interceptors.response.use(
         try {
           const { data } = await axios.post<{ access: string }>(`${BASE}/api/token/refresh/`, { refresh });
           localStorage.setItem('niat_access', data.access);
+          document.cookie = `niat_access=${data.access}; path=/; max-age=86400`;
           if (original.headers) original.headers.Authorization = `Bearer ${data.access}`;
           return articlesApi(original);
         } catch {
           localStorage.removeItem('niat_access');
+          document.cookie = 'niat_access=; path=/; max-age=0';
+          document.cookie = 'niat_onboarded=; path=/; max-age=0';
+          document.cookie = 'niat_needs_onboarding=; path=/; max-age=0';
           localStorage.removeItem('niat_refresh');
         }
       }

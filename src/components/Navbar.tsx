@@ -1,5 +1,8 @@
+"use client";
+
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Search, Menu, X, ChevronRight, PenLine, UserCircle, LogOut } from 'lucide-react';
 import { clearTokens, fetchFoundingEditorProfile, isOnboardingComplete } from '../lib/authApi';
 import { useCampuses } from '../hooks/useCampuses';
@@ -20,13 +23,13 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [articlesDropdownOpen, setArticlesDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [hasToken, setHasToken] = useState(() => !!localStorage.getItem('niat_access'));
+  const [hasToken, setHasToken] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(() => !!localStorage.getItem('niat_access'));
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { campuses: apiCampuses } = useCampuses();
   const { categories: apiCategories } = useCategories();
   const getCampusSlug = (campusId: string) => apiCampuses.find((c) => String(c.id) === campusId)?.slug ?? campusId;
@@ -42,6 +45,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
       const token = !!localStorage.getItem('niat_access');
       setHasToken(token);
     };
+    update();
     window.addEventListener('niat:auth', update);
     return () => window.removeEventListener('niat:auth', update);
   }, []);
@@ -62,8 +66,8 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
       .finally(() => setIsLoadingProfile(false));
   }, [hasToken]);
 
-  const isHome = location.pathname === '/';
-  const isOnArticles = location.pathname === '/articles';
+  const isHome = pathname === '/';
+  const isOnArticles = pathname === '/articles';
   const shouldShowSearch = showFullNav && (!isHome || showSearch === true);
   const shouldShowNavShadow = isHome && showSearch === true;
 
@@ -82,7 +86,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
-      navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(search.trim())}`);
     }
   };
 
@@ -103,7 +107,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
     window.dispatchEvent(new Event('niat:auth'));
     setProfileDropdownOpen(false);
     setMobileMenuOpen(false);
-    navigate('/');
+    router.push('/');
   };
 
   return (
@@ -123,14 +127,14 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0">
+            <Link href="/" className="flex items-center gap-1.5 shrink-0">
               <img
-                src="/niat.png"
+                src="/niat.svg"
                 alt="NIAT"
                 className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
               />
-              <span className="font-display text-xl sm:text-2xl font-bold text-[#991b1b]">NIAT</span>
-              <span className="font-body text-lg sm:text-xl font-medium text-black ml-1">Insider</span>
+              <span className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[#991b1b]">NIAT</span>
+              <span className="font-display text-lg sm:text-xl font-bold tracking-tight text-black">Insider</span>
             </Link>
 
             <form
@@ -162,7 +166,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
               ) : hasToken && !onboardingComplete && (
                 <>
                   <Link
-                    to="/onboarding"
+                    href="/onboarding"
                     className="text-[#991b1b] hover:text-[#7f1d1d] text-sm font-medium transition-colors"
                   >
                     Complete profile
@@ -179,7 +183,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
               {showFullNav && (
                 <>
                   <Link
-                    to="/campuses"
+                    href="/campuses"
                     className="text-black hover:text-black text-sm font-medium transition-colors"
                   >
                     Campuses
@@ -193,7 +197,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     onMouseLeave={() => setArticlesDropdownOpen(false)}
                   >
                     <Link
-                      to="/articles"
+                      href="/articles"
                       className={`relative inline-flex items-center py-2 text-sm font-medium transition-colors min-w-[4.5rem] ${isOnArticles ? 'text-[#991b1b]' : 'text-black hover:text-black'
                         }`}
                     >
@@ -226,7 +230,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                                   return (
                                     <li key={c.slug}>
                                       <Link
-                                        to={`/articles?category=${c.slug}`}
+                                        href={`/articles?category=${c.slug}`}
                                         onClick={() => setArticlesDropdownOpen(false)}
                                         className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md text-[#1e293b] hover:bg-[#fbf2f3] hover:text-[#991b1b] transition-colors text-sm font-medium"
                                       >
@@ -238,7 +242,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                                 })}
                                 <li className="border-t border-[rgba(30,41,59,0.08)] mt-2 pt-2">
                                   <Link
-                                    to={HOW_TO_GUIDES_LINK.path}
+                                    href={HOW_TO_GUIDES_LINK.path}
                                     onClick={() => setArticlesDropdownOpen(false)}
                                     className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md text-[#1e293b] hover:bg-[#fbf2f3] hover:text-[#991b1b] transition-colors text-sm font-medium"
                                   >
@@ -273,7 +277,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                                     return (
                                       <Link
                                         key={a.id}
-                                        to={url}
+                                        href={url}
                                         onClick={() => setArticlesDropdownOpen(false)}
                                         className="block p-2 rounded-lg hover:bg-[#fbf2f3] transition-colors group"
                                       >
@@ -308,7 +312,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                             style={{ backgroundColor: 'rgba(153, 27, 27, 0.04)' }}
                           >
                             <Link
-                              to="/articles"
+                              href="/articles"
                               onClick={() => setArticlesDropdownOpen(false)}
                               className="inline-flex items-center gap-1 text-[#991b1b] font-medium text-sm hover:underline"
                             >
@@ -328,7 +332,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     Talk To Seniors
                   </a>
 
-                  <Link to="/contribute/write" className="btn-primary text-sm font-medium inline-flex items-center gap-1.5">
+                  <Link href="/contribute/write" className="btn-primary text-sm font-medium inline-flex items-center gap-1.5">
                     <PenLine className="h-4 w-4" />
                     Write Article
                   </Link>
@@ -339,7 +343,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((o) => !o)}
-                    className="flex items-center gap-1.5 text-black hover:text-black text-sm font-medium transition-colors"
+                    className="flex cursor-pointer items-center gap-1.5 text-black hover:text-black text-sm font-medium transition-colors"
                   >
                     <UserCircle className="h-5 w-5" />
                     Profile
@@ -350,7 +354,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                       style={{ boxShadow: '0 4px 12px rgba(30,41,59,0.12)' }}
                     >
                       <Link
-                        to="/profile"
+                        href="/profile"
                         onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e293b] hover:bg-[#fbf2f3] transition-colors"
                       >
@@ -358,7 +362,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                         Profile
                       </Link>
                       <Link
-                        to="/my-articles"
+                        href="/my-articles"
                         onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e293b] hover:bg-[#fbf2f3] transition-colors"
                       >
@@ -379,10 +383,10 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
               )}
               {!hasToken && (
                 <>
-                  <Link to="/login" className="text-black hover:text-black text-sm font-medium transition-colors">
+                  <Link href="/login" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Login
                   </Link>
-                  <Link to="/register" className="text-black hover:text-black text-sm font-medium transition-colors">
+                  <Link href="/register" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Register
                   </Link>
                 </>
@@ -425,7 +429,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                 ) : hasToken && !onboardingComplete && (
                   <>
                     <Link
-                      to="/onboarding"
+                      href="/onboarding"
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-[#991b1b] font-medium text-sm"
                     >
@@ -443,14 +447,14 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                 {showFullNav && (
                   <>
                     <Link
-                      to="/campuses"
+                      href="/campuses"
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-black hover:text-black text-sm font-medium"
                     >
                       Campuses
                     </Link>
                     <Link
-                      to="/articles"
+                      href="/articles"
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-black hover:text-black text-sm font-medium"
                     >
@@ -464,17 +468,17 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                       Talk To Seniors
                     </a>
                     <Link
-                      to="/contribute/write"
+                      href="/contribute/write"
                       onClick={() => setMobileMenuOpen(false)}
                       className="btn-primary text-sm font-medium text-center inline-flex items-center justify-center gap-1.5"
                     >
                       <PenLine className="h-4 w-4" />
                       Write Article
                     </Link>
-                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                    <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       Profile
                     </Link>
-                    <Link to="/my-articles" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                    <Link href="/my-articles" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       My Articles
                     </Link>
                     <button
@@ -488,10 +492,10 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                 )}
                 {!hasToken && (
                   <>
-                    <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       Login
                     </Link>
-                    <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       Register
                     </Link>
                   </>

@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+"use client";
+
+import Link from 'next/link';
 import { User, ThumbsUp } from 'lucide-react';
 import ImageWithFallback from './ImageWithFallback';
 import type { ApiArticle } from '../types/articleApi';
@@ -20,7 +22,7 @@ export default function RecentUpdateCard({ article, campusSlug }: RecentUpdateCa
 
   return (
     <Link
-      to={href}
+      href={href}
       className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
     >
       {article.cover_image && (

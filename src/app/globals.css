@@ -1,8 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "../**/*.{js,ts,jsx,tsx,mdx}";
 
 @layer base {
   :root {
@@ -49,7 +47,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   
   html {
@@ -58,7 +56,11 @@
   }
 
   body {
-    @apply bg-white text-black antialiased overflow-x-hidden;
+    background-color: #ffffff;
+    color: #000000;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', sans-serif;
   }
   
@@ -111,47 +113,93 @@
   }
   
   .btn-primary {
-    @apply bg-[#991b1b] text-white px-4 py-2 rounded-md transition-colors;
+    background-color: #991b1b;
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
   }
   
   .btn-primary:hover {
-    @apply bg-[#b91c1c];
+    background-color: #b91c1c;
   }
   
   .btn-secondary {
-    @apply bg-white text-[#991b1b] border border-[#991b1b] px-4 py-2 rounded-md transition-colors;
+    background-color: #ffffff;
+    color: #991b1b;
+    border: 1px solid #991b1b;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
   }
   
   .btn-secondary:hover {
-    @apply bg-[#fbf2f3];
+    background-color: #fbf2f3;
   }
   
   .tag-campus-life {
-    @apply bg-[#7678ed] text-white px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #7678ed;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .tag-experiences {
-    @apply bg-[#f18701] text-white px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #f18701;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .tag-academics {
-    @apply bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #14b8a6;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .tag-how-to {
-    @apply bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #22c55e;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .verified-badge {
-    @apply bg-teal-50 text-teal-600 px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #f0fdfa;
+    color: #0d9488;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .niat-role-badge {
-    @apply bg-[#991b1b] text-white px-2 py-1 rounded-full text-xs font-medium;
+    background-color: #991b1b;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
   
   .article-card {
-    @apply bg-white shadow-card border-l-4 border-transparent hover:border-[#991b1b] transition-all;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .article-card:hover {
+    border-left-color: #991b1b;
   }
 
   /* Article body image cards: borderless, full-width; remove button (hidden in read-only) + img + caption */
@@ -222,6 +270,150 @@
   .article-body-editor {
     outline: none;
     min-height: 300px;
+  }
+
+  /* NIAT Insider Article Premium Styles */
+  .ni-article {
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.8;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .ni-intro {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    border-left: 4px solid var(--niat-maroon);
+    padding-left: 1.5rem;
+  }
+
+  .ni-h2 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-top: 3.5rem;
+    margin-bottom: 1.5rem;
+    color: #111827;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  .ni-para {
+    font-size: 1.15rem;
+    margin-bottom: 1.75rem;
+    color: #374151;
+    line-height: 1.8;
+  }
+
+  .ni-highlight {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    border: 1px solid rgba(153, 27, 27, 0.08);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    margin: 3rem 0;
+    box-shadow: 0 10px 15px -3px rgba(153, 27, 27, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ni-highlight:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -5px rgba(153, 27, 27, 0.08);
+  }
+
+  .ni-highlight p {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #991b1b;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+
+  .ni-list {
+    margin-bottom: 2rem;
+    padding-left: 0.5rem;
+    list-style-type: none;
+  }
+
+  .ni-list-item {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.15rem;
+    color: #374151;
+  }
+
+  .ni-list-item::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--niat-maroon);
+    font-weight: 700;
+    transition: transform 0.2s ease;
+  }
+
+  .ni-list-item:hover::before {
+    transform: translateX(3px);
+  }
+
+  .ni-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.75rem;
+    font-style: italic;
+    color: #4b5563;
+    border-left: 5px solid var(--niat-yellow);
+    padding-left: 2.5rem;
+    margin: 4rem 0;
+    position: relative;
+    line-height: 1.4;
+  }
+
+  .ni-quote::before {
+    content: '"';
+    position: absolute;
+    top: -1rem;
+    left: 0.5rem;
+    font-size: 5rem;
+    color: var(--niat-yellow);
+    opacity: 0.2;
+    font-family: serif;
+    pointer-events: none;
+  }
+
+  .ni-author-note {
+    margin-top: 4rem;
+    padding: 2rem;
+    background-color: #f9fafb;
+    border-radius: 1rem;
+    border-left: 4px solid #e5e7eb;
+    font-style: italic;
+    color: #6b7280;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .ni-tag {
+    display: inline-block;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+  }
+
+  .ni-tag:hover {
+    background-color: var(--niat-maroon);
+    color: white;
+    border-color: var(--niat-maroon);
   }
 }
 

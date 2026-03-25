@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+"use client";
+
+import Link from 'next/link';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
@@ -14,7 +16,7 @@ export default function NotFound({ message = 'The page you’re looking for does
         <h1 className="font-display text-2xl md:text-4xl font-bold text-black mb-3">Page not found</h1>
         <p className="text-black/70 mb-8">{message}</p>
         <Link
-          to="/"
+          href="/"
           className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[#991b1b] text-white font-medium hover:bg-[#b91c1c] transition-colors"
         >
           Back to Home

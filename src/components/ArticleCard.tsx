@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+"use client";
+
+import Link from 'next/link';
 import { ThumbsUp, Clock } from 'lucide-react';
 import type { Article } from '../types';
 import ImageWithFallback from './ImageWithFallback';
@@ -13,7 +15,7 @@ export default function ArticleCard({ article, campusSlug }: ArticleCardProps) {
   const articleKey = article.slug || article.id;
   return (
     <Link
-      to={`/campus/${campusSlug}/article/${articleKey}`}
+      href={`/campus/${campusSlug}/article/${articleKey}`}
       className="block bg-white rounded-xl shadow-card hover:border-[#991b1b] transition-all duration-200 overflow-hidden border-l-4 border-transparent"
     >
       {article.coverImage && (
