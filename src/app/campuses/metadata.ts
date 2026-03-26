@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Explore NIAT Campuses',
-  description: 'Browse all NIAT campuses and find student guides, clubs, and local tips for every location.',
+  title: 'Explore All NIAT Campuses | NIAT Insider',
+  description: 'Compare and browse all NIAT campuses. Discover exclusive student guides, tech clubs, local city tips, and campus details for every NIAT university location.',
+  keywords: ['niat campuses', 'best niat campus', 'niat locations', 'niat campus list', 'niat reviews'],
 }

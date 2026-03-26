@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   Star, MapPin, Users, FileText, Clock, ChevronRight,
-  Calendar, MessageSquare, Award, Utensils, Home, Play, PenLine, Sparkles, ExternalLink, Info
+  Calendar, MessageSquare, Utensils, Home, Play, PenLine, Sparkles, ExternalLink, Info
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -84,11 +84,9 @@ export default function Campus() {
   };
   const displayArticleCount = campus ? articleCount : displayCampus.articleCount;
 
-  const [activeSection, setActiveSection] = useState('recentUpdates');
+  const [activeSection, setActiveSection] = useState('week1');
 
   const sectionRefs = {
-    recentUpdates: useRef<HTMLDivElement>(null),
-    topVoted: useRef<HTMLDivElement>(null),
     week1: useRef<HTMLDivElement>(null),
     campusLife: useRef<HTMLDivElement>(null),
     clubs: useRef<HTMLDivElement>(null),
@@ -103,7 +101,6 @@ export default function Campus() {
     { enabled: !!campusId }
   );
   const { clubs: campusClubs } = useClubs(campusId ? { campus: campusId } : undefined);
-  const { articles: globalGuideArticles } = usePublishedArticles({ is_global_guide: true });
 
   const campusLifeVideos = [
     { id: '4XMwDh8BsSA', url: 'https://youtu.be/4XMwDh8BsSA?si=66y6Xlndg8C6y5yY', title: 'Hostel and First Week Vibes', tag: 'Campus Life' },
@@ -116,36 +113,35 @@ export default function Campus() {
     () => recentPublishedArticles.filter((a) => a.campus_id != null && String(a.campus_id) === campusId),
     [recentPublishedArticles, campusId]
   );
-  const campusArticles = useMemo(
-    () => campusRecentPublishedArticles.map(apiArticleToPageArticle),
-    [campusRecentPublishedArticles]
-  );
   const slugForLinks = campus?.slug ?? campusSlug ?? '';
   const slugForCampusId = (id: string | number) => {
     const idStr = String(id);
     return idStr === campusId ? slugForLinks : (apiCampuses.find((c) => String(c.id) === idStr)?.slug ?? idStr);
   };
-  const topVotedArticles = useMemo(
-    () => [...campusArticles].sort((a, b) => b.upvoteCount - a.upvoteCount).slice(0, 6),
-    [campusArticles]
-  );
   const foodArticles = useMemo(
-    () => campusArticles.filter((a) => a.category === 'campus-life' || a.category === 'experiences').slice(0, 6),
-    [campusArticles]
+    () =>
+      campusRecentPublishedArticles
+        .filter((a) => a.category === 'survival-food')
+        .map(apiArticleToPageArticle)
+        .slice(0, 6),
+    [campusRecentPublishedArticles]
   );
   const livingArticles = useMemo(
-    () => campusArticles.filter((a) => a.category === 'academics').slice(0, 6),
-    [campusArticles]
+    () =>
+      campusRecentPublishedArticles
+        .filter((a) => a.category === 'amenities')
+        .map(apiArticleToPageArticle)
+        .slice(0, 6),
+    [campusRecentPublishedArticles]
   );
   const thirtyDaysArticles = useMemo(
-    () => [...campusArticles].filter((a) => (a.updatedDays ?? 9999) <= 30).slice(0, 6),
-    [campusArticles]
+    () =>
+      campusRecentPublishedArticles
+        .filter((a) => a.category === 'onboarding-kit')
+        .map(apiArticleToPageArticle)
+        .slice(0, 6),
+    [campusRecentPublishedArticles]
   );
-  const topGlobalGuides = useMemo(
-    () => [...globalGuideArticles].sort((a, b) => b.upvote_count - a.upvote_count).slice(0, 3),
-    [globalGuideArticles]
-  );
-
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     const ref = sectionRefs[sectionId as keyof typeof sectionRefs];
@@ -258,8 +254,6 @@ export default function Campus() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex overflow-x-auto scrollbar-hide gap-1 py-3">
             {[
-              { id: 'recentUpdates', label: 'Recent updates', icon: FileText },
-              { id: 'topVoted', label: 'Top voted', icon: Award },
               { id: 'week1', label: '30 days', icon: Calendar },
               { id: 'campusLife', label: 'Campus Life', icon: Play },
               { id: 'clubs', label: 'Clubs', icon: Users },
@@ -285,99 +279,6 @@ export default function Campus() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Section: Recent updates — published articles from API */}
-        <section ref={sectionRefs.recentUpdates} className="mb-16">
-          <div className="flex items-center mb-4">
-            <FileText className="h-6 w-6 text-[#991b1b] mr-3" />
-            <h2 className="font-display text-2xl font-bold text-black">
-              Recent updates
-            </h2>
-          </div>
-          <p className="text-black mb-6">Latest published articles at {displayCampus.name}.</p>
-          {recentLoading ? (
-            <div className="flex items-center gap-2 text-[#64748b] py-4">
-              <span className="animate-spin rounded-full border-2 border-[#991b1b]/30 border-t-[#991b1b] size-5" aria-hidden />
-              Loading articles…
-            </div>
-          ) : campusRecentPublishedArticles.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-[#991b1b]/30 bg-[#fbf2f3]/80 p-8 md:p-10 text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#991b1b]/10 text-[#991b1b] mb-4">
-                <Sparkles className="h-7 w-7" />
-              </div>
-              <h3 className="font-display text-xl font-bold text-[#1e293b] mb-2">No stories yet — yours could be first</h3>
-              <p className="text-[#64748b] max-w-md mx-auto mb-6">
-                Students at {displayCampus.name} haven’t published anything here yet. Share your week-one tips, food spots, or campus life and help the next batch find their way.
-              </p>
-              <Link
-                href={`/contribute/write${campus?.id ? `?campus=${campus.id}` : ''}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#991b1b] px-6 py-3 text-white font-medium hover:bg-[#7f1d1d] transition-colors shadow-lg hover:shadow-xl"
-              >
-                <PenLine className="h-5 w-5" />
-                Write the first article
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              {campusRecentPublishedArticles.map((article) => (
-                <RecentUpdateCard
-                  key={article.id}
-                  article={article}
-                  campusSlug={slugForLinks}
-                />
-              ))}
-            </div>
-          )}
-          {campusRecentPublishedArticles.length > 0 && (
-            <Link
-              href={`/articles${campusId ? `?campus=${campusId}` : ''}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#991b1b] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
-            >
-              View all articles <ChevronRight className="h-4 w-4" />
-            </Link>
-          )}
-        </section>
-
-        {/* Section: Top voted articles */}
-        <section ref={sectionRefs.topVoted} className="mb-16">
-          <div className="flex items-center mb-4">
-            <Award className="h-6 w-6 text-[#991b1b] mr-3" />
-            <h2 className="font-display text-2xl font-bold text-black">
-              Top voted articles
-            </h2>
-          </div>
-          <p className="text-black mb-6">Most upvotes articles at {displayCampus.name}</p>
-          {topVotedArticles.length === 0 ? (
-            <p className="text-black mb-4">No articles yet. Be the first to write one.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              {topVotedArticles.map((article) => (
-                <Link
-                  key={article.id}
-                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug || article.id}` : `/article/${article.slug || article.id}`}
-                  className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
-                >
-                  {article.coverImage && (
-                    <div className="h-36 w-full overflow-hidden">
-                      <ImageWithFallback src={article.coverImage} alt={article.title} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">{article.title}</h3>
-                    <p className="text-sm text-[#64748b] line-clamp-2 mb-2">{article.excerpt}</p>
-                    <span className="text-xs text-[#94a3b8]">👍 {article.upvoteCount} upvotes</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          <Link
-            href={`/articles${campusId ? `?campus=${campusId}` : ''}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#991b1b] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
-          >
-            Know more <ChevronRight className="h-4 w-4" />
-          </Link>
-        </section>
-
         {/* Section: 30 days at NIAT — global articles, same on all campuses */}
         <section ref={sectionRefs.week1} className="mb-16">
           <div className="flex items-center mb-4">
@@ -730,49 +631,6 @@ export default function Campus() {
           </div>
         </section>
 
-        {/* Global guides — also useful for you */}
-        <section className="mb-16 py-8 px-6 rounded-xl bg-[#f8fafc]">
-          <h3 className="font-display text-lg font-semibold text-[#64748b] mb-4">
-            📘 Global Guides — upvotes at any campus
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            {topGlobalGuides.map((guide) => (
-                <Link
-                  key={guide.id}
-                  href={`/article/${guide.slug || guide.id}`}
-                  className="block bg-white rounded-lg p-4 border border-[rgba(30,41,59,0.08)] hover:border-[#991b1b]/30 transition-colors"
-                >
-                  <h4 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">
-                    {guide.title}
-                  </h4>
-                  <p className="text-sm text-[#64748b] line-clamp-2 mb-2">
-                    {guide.excerpt || 'No excerpt available yet.'}
-                  </p>
-                  <span className="inline-flex items-center text-[#991b1b] text-sm font-medium hover:underline">
-                    Read <ChevronRight className="h-4 w-4 ml-0.5" />
-                  </span>
-                </Link>
-              ))}
-          </div>
-          <div className="flex justify-end">
-            <Link
-              href="/how-to-guides"
-              className="text-[#991b1b] text-sm font-medium hover:underline inline-flex items-center"
-            >
-              View all <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
-          </div>
-        </section>
-
-        {/* V2 Coming Soon */}
-        <section className="bg-gray-100 rounded-lg p-8 text-center">
-          <h3 className="font-display text-xl font-bold text-gray-500 mb-2">
-            Coming Soon
-          </h3>
-          <p className="text-gray-500">
-            🗓 Events · 🚌 Transport · 🎯 Clubs · 🏙 City Guide — Be the first to contribute.
-          </p>
-        </section>
       </div>
 
       <Footer />

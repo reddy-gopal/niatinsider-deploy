@@ -16,7 +16,7 @@ export function apiCampusToCampus(item: CampusListItem): Campus {
     googleMapLink: item.googleMapLink ?? null,
     niatSince: new Date().getFullYear(),
     batchSize: 0,
-    articleCount: 0,
+    articleCount: item.articleCount ?? 0,
     rating: null,
     coverColor: '#991b1b',
     coverImage: item.imageUrl || DEFAULT_COVER,

@@ -7,13 +7,16 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/contribute/write',
+          '/login',
+          '/register',
+          '/onboarding',
           '/profile',
           '/my-articles',
-          '/onboarding',
+          '/search',
         ],
       },
     ],
-    sitemap: 'https://niatinsider.com/sitemap.xml',
+    sitemap: 'https://www.niatinsider.com/sitemap.xml',
+    host: 'https://www.niatinsider.com',
   }
 }

@@ -3,6 +3,10 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Login',
   description: 'Sign in to your NIAT Insider account.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function LoginLayout({

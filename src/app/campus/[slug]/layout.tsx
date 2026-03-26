@@ -11,19 +11,30 @@ export async function generateMetadata(
     )
     if (!res.ok) throw new Error('not found')
     const campus = await res.json()
+    const description = campus.description?.trim()
+      ? campus.description.slice(0, 155)
+      : `Explore student guides, clubs and campus life at ${campus.name}.`
+
     return {
       title: `${campus.name} — Student Guide`,
-      description: campus.description?.trim()
-        ? campus.description.slice(0, 155)
-        : `Explore student guides, clubs and campus life at ${campus.name}.`,
+      description,
       alternates: { canonical: `/campus/${slug}` },
+      robots: {
+        index: true,
+        follow: true,
+      },
       openGraph: {
         title: `${campus.name} — Student Guide | NIAT Insider`,
-        description: campus.description?.trim()
-          ? campus.description.slice(0, 155)
-          : `Explore student guides, clubs and campus life at ${campus.name}.`,
-        images: campus.image_url ? [{ url: campus.image_url }] : [],
+        description,
+        url: `/campus/${slug}`,
+        images: campus.imageUrl ? [{ url: campus.imageUrl }] : [],
         type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${campus.name} — Student Guide`,
+        description,
+        images: campus.imageUrl ? [campus.imageUrl] : undefined,
       },
     }
   } catch {

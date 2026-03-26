@@ -9,7 +9,7 @@ interface CampusSchemaProps {
   imageUrl?: string
 }
 
-const BASE_URL = 'https://niatinsider.com'
+const BASE_URL = 'https://www.niatinsider.com'
 
 export function CampusStructuredData({
   name,

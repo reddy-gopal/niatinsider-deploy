@@ -10,4 +10,5 @@ export interface CampusListItem {
   isDeemed: boolean;
   googleMapLink?: string | null;
   description?: string;
+  articleCount?: number;
 }

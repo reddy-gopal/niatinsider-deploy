@@ -301,6 +301,7 @@ export default function WriteArticle() {
     bodyRef.current?.focus();
   }, []);
 
+
   const saveDraftToStorage = useCallback(() => {
     if (typeof localStorage === 'undefined') return;
     const bodyHtml = getBodyHtmlForSave(bodyRef.current);
@@ -451,9 +452,9 @@ export default function WriteArticle() {
     try {
       const subcategoryPayload = needsSubcategory
         ? {
-            subcategory: subcategory.trim(),
-            subcategory_other: selectedSubcategoryOption?.requires_other ? subcategoryOther.trim() : '',
-          }
+          subcategory: subcategory.trim(),
+          subcategory_other: selectedSubcategoryOption?.requires_other ? subcategoryOther.trim() : '',
+        }
         : {};
       const bodyHtml = buildImageCardsHtml(attachedImages) + (bodyContent || '');
       const images = [...attachedImages.map((i) => i.url), ...extractImageUrlsFromHtml(bodyContent || '')];
@@ -471,7 +472,7 @@ export default function WriteArticle() {
         save_as_draft: false,
         ...subcategoryPayload,
       };
-      
+
       // Debug logging
       console.log('[DEBUG] Frontend payload:', payload);
       console.log('[DEBUG] categoryId:', categoryId, 'safeCategoryId:', safeCategoryId);
@@ -495,7 +496,7 @@ export default function WriteArticle() {
       const messages: string[] = [];
 
       if (statusCode === 401) messages.push('Please log in again to submit.');
-      else if (statusCode === 403) messages.push('You donâ€™t have permission to submit this article.');
+      else if (statusCode === 403) messages.push("You don't have permission to submit this article.");
       else if (data && typeof data === 'object') {
         const detail = data.detail;
         if (typeof detail === 'string') messages.push(detail);
@@ -591,7 +592,7 @@ export default function WriteArticle() {
 
   return (
     <div className="write-article-page min-h-screen bg-white overflow-x-hidden font-sans">
-      {/* No Navbar on Write Article â€” platform name is in the editor header */}
+      {/* No Navbar on Write Article - platform name is in the editor header */}
 
       {(submitError || loadEditError) && (
         <div className="mx-4 mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
@@ -608,7 +609,7 @@ export default function WriteArticle() {
         </div>
       )}
 
-      {/* Zone 1 â€” Editor Header (no Navbar; platform name on left) */}
+      {/* Zone 1 - Editor Header (no Navbar; platform name on left) */}
       <header
         className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-2 h-auto min-h-14 py-2 px-4 sm:px-6 border-b"
         style={{ backgroundColor: '#fff8eb', borderColor: 'rgba(30, 41, 59, 0.1)' }}
@@ -626,7 +627,9 @@ export default function WriteArticle() {
             {saving ? (
               <span className="text-[rgba(30,41,59,0.5)]">Saving...</span>
             ) : saved ? (
-              <span className="text-green-600">ðŸŸ¢ Saved</span>
+              <span className="inline-flex items-center gap-1 text-green-600">
+                <Check className="h-3.5 w-3.5" /> Saved
+              </span>
             ) : (
               <span className="text-amber-600">Unsaved</span>
             )}
@@ -641,7 +644,7 @@ export default function WriteArticle() {
               {submitLoading ? (
                 <span className="inline-flex items-center gap-2">
                   <span className="animate-spin rounded-full border-2 border-white/40 border-t-white size-4 shrink-0" role="status" aria-label="Submitting" />
-                  Submittingâ€¦
+                  Submitting...
                 </span>
               ) : (
                 'Submit for Review'
@@ -651,7 +654,7 @@ export default function WriteArticle() {
         </div>
       </header>
 
-      {/* Zone 2 â€” Formatting Toolbar (scrolls horizontally on small screens) */}
+      {/* Zone 2 - Formatting Toolbar (scrolls horizontally on small screens) */}
       <div
         className="sticky z-30 flex items-center gap-1 px-4 sm:px-6 h-11 border-b overflow-x-auto overflow-y-hidden scrollbar-hide [&>*]:shrink-0"
         style={{ backgroundColor: '#ffffff', borderColor: 'rgba(30, 41, 59, 0.1)', top: '3.5rem' }}
@@ -675,6 +678,7 @@ export default function WriteArticle() {
             </option>
           ))}
         </select>
+
         <ToolbarDivider />
 
         <ToolbarButton onClick={() => execCommand('bold')} title="Bold">
@@ -769,9 +773,9 @@ export default function WriteArticle() {
         </div>
       )}
 
-      {/* Zone 3 â€” Writing Canvas */}
+      {/* Zone 3 - Writing Canvas */}
       <main className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full min-w-0" style={{ minHeight: 'calc(100vh - 96px)' }}>
-        {/* Section + subcategory â€” show selected section as text with Change; or dropdown to select */}
+        {/* Section + subcategory - show selected section as text with Change; or dropdown to select */}
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <div className="min-w-0 flex-1" style={{ maxWidth: 220 }}>
             <span className="flex items-center gap-2 text-[13px] font-medium text-[#1e293b] mb-1.5">
@@ -813,7 +817,7 @@ export default function WriteArticle() {
               >
                 <option value="">Select a Section</option>
                 {categoriesLoading ? (
-                  <option disabled>Loadingâ€¦</option>
+                  <option disabled>Loading...</option>
                 ) : (
                   categories.map((c: ApiCategory) => (
                     <option key={c.id} value={c.id}>
@@ -910,15 +914,15 @@ export default function WriteArticle() {
           className="article-subtitle-input w-full border-none outline-none bg-transparent mb-4 placeholder-[rgba(30,41,59,0.5)]"
         />
 
-        {/* Author â€” simple username */}
+        {/* Author - simple username */}
         <div
           className="inline-flex items-center px-3 py-1.5 rounded-md border mb-4 text-sm font-medium text-[#1e293b]"
           style={{ borderColor: 'rgba(30, 41, 59, 0.15)', backgroundColor: 'rgba(30, 41, 59, 0.04)' }}
         >
-          {username || 'â€¦'}
+          {username || '...'}
         </div>
 
-        {/* Uploaded images â€” small cards below author, preview only; cancel icon to remove */}
+        {/* Uploaded images - small cards below author, preview only; cancel icon to remove */}
         {attachedImages.length > 0 && (
           <div className="mb-6">
             <div className="flex flex-wrap gap-4">
@@ -951,29 +955,29 @@ export default function WriteArticle() {
         {/* Divider */}
         <div className="h-px my-4" style={{ backgroundColor: 'rgba(30, 41, 59, 0.08)' }} />
 
-        {/* Body Editor â€” placeholder "Start writing..." is inside the editor (in the text flow) */}
+        {/* Body Editor - placeholder "Start writing..." is inside the editor (in the text flow) */}
         <div className={validationErrors.body ? 'rounded ring-2 ring-[#991b1b]' : ''}>
           <div
             ref={bodyRef}
             contentEditable
             suppressContentEditableWarning
-            className="article-body-editor w-full bg-transparent"
+            className="article-body-editor w-full bg-transparent ni-article"
             aria-invalid={validationErrors.body}
             aria-describedby={validationErrors.body ? 'body-error' : undefined}
             onFocus={() => {
-            const el = bodyRef.current;
-            if (!el) return;
-            const ph = el.querySelector('[data-body-placeholder]');
-            if (ph && el.innerText?.trim() === 'Start writing...') {
-              ph.remove();
-              const sel = window.getSelection();
-              const range = document.createRange();
-              range.setStart(el, 0);
-              range.collapse(true);
-              sel?.removeAllRanges();
-              sel?.addRange(range);
-            }
-          }}
+              const el = bodyRef.current;
+              if (!el) return;
+              const ph = el.querySelector('[data-body-placeholder]');
+              if (ph && el.innerText?.trim() === 'Start writing...') {
+                ph.remove();
+                const sel = window.getSelection();
+                const range = document.createRange();
+                range.setStart(el, 0);
+                range.collapse(true);
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+              }
+            }}
           />
           {validationErrors.body && <p id="body-error" className="sr-only" role="alert">Body must be at least 100 characters.</p>}
         </div>
@@ -1036,7 +1040,7 @@ export default function WriteArticle() {
                   {imageUploading ? (
                     <span className="flex items-center justify-center gap-2 text-sm" style={{ color: 'rgba(30, 41, 59, 0.7)' }}>
                       <span className="animate-spin rounded-full border-2 border-[#fbf2f3] border-t-[#991b1b] size-5 shrink-0" role="status" aria-label="Uploading" />
-                      Uploadingâ€¦
+                      Uploading...
                     </span>
                   ) : (
                     <>
@@ -1145,7 +1149,7 @@ export default function WriteArticle() {
                   Drop video here or click to upload
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'rgba(30, 41, 59, 0.5)' }}>
-                  MP4, MOV â€” max 100MB
+                  MP4, MOV - max 100MB
                 </p>
               </div>
             )}
@@ -1161,7 +1165,7 @@ export default function WriteArticle() {
         </>
       )}
 
-      {/* Success Modal â€” engaging post-submit */}
+      {/* Success Modal - engaging post-submit */}
       {showSuccessModal && (
         <>
           <div className="fixed inset-0 bg-black/40 z-50" />
@@ -1179,7 +1183,7 @@ export default function WriteArticle() {
               </h3>
             </div>
             <p className="text-sm sm:text-base mb-6" style={{ color: 'rgba(30, 41, 59, 0.75)' }}>
-              Your article has been saved and is now in the review queue. A moderator will look at it soonâ€”once approved, it'll be visible to the whole community.
+              Your article has been saved and is now in the review queue. A moderator will look at it soon - once approved, it'll be visible to the whole community.
             </p>
             <div className="flex flex-col gap-3">
               {submittedArticleKey != null && (
@@ -1214,7 +1218,7 @@ export default function WriteArticle() {
           75% { transform: translateX(4px); }
         }
         .shake { animation: shake 0.3s ease-in-out; }
-        /* Placeholder for contenteditable (e.g. image captions). Exclude body editor â€” it uses the overlay. */
+        /* Placeholder for contenteditable (e.g. image captions). Exclude body editor - it uses the overlay. */
         [contenteditable]:not(.article-body-editor):empty::before {
           content: attr(data-placeholder);
           color: rgba(30, 41, 59, 0.4);
@@ -1251,7 +1255,7 @@ export default function WriteArticle() {
           padding: 2px 6px;
           border-radius: 4px;
         }
-        /* Write article page â€” system sans-serif stack */
+        /* Write article page - system sans-serif stack */
         .write-article-page,
         .write-article-page * {
           font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -1282,7 +1286,7 @@ export default function WriteArticle() {
           line-height: 1.75;
           color: #9ca3af;
         }
-        /* Image card â€” borderless, full-width; remove button + img + caption */
+        /* Image card - borderless, full-width; remove button + img + caption */
         .article-image-card {
           position: relative;
           margin: 24px 0;
@@ -1354,7 +1358,7 @@ export default function WriteArticle() {
         }
       `}</style>
 
-      {/* Toasts â€” bottom-right */}
+      {/* Toasts - bottom-right */}
       <div
         className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-[min(100vw-2rem,22rem)]"
         role="region"
@@ -1364,11 +1368,10 @@ export default function WriteArticle() {
           <div
             key={t.id}
             role="alert"
-            className={`flex items-start gap-3 rounded-xl border shadow-lg px-4 py-3 text-sm transition-all duration-200 ${
-              t.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-900'
-                : 'bg-amber-50 border-amber-200 text-amber-900'
-            }`}
+            className={`flex items-start gap-3 rounded-xl border shadow-lg px-4 py-3 text-sm transition-all duration-200 ${t.type === 'error'
+              ? 'bg-red-50 border-red-200 text-red-900'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}
           >
             <p className="flex-1 min-w-0 pt-0.5">{t.message}</p>
             <button

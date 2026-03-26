@@ -10,7 +10,7 @@ interface ArticleSchemaProps {
   isGlobalRoute?: boolean
 }
 
-const BASE_URL = 'https://niatinsider.com'
+const BASE_URL = 'https://www.niatinsider.com'
 
 export function ArticleStructuredData({
   title,

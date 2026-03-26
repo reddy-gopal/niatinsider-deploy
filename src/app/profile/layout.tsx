@@ -3,6 +3,10 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'My Profile',
   description: 'Manage your NIAT Insider profile.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function ProfileLayout({

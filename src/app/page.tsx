@@ -125,9 +125,8 @@ export default function Home() {
               <p className="text-white/90 text-base md:text-lg mb-6 max-w-3xl mx-auto lg:mx-0">
                 Find out everything. Like everything.
                 <span
-                  className={`ml-2 inline-block text-white/95 font-semibold transition-opacity duration-200 ${
-                    showSloganTerm ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`ml-2 inline-block text-white/95 font-semibold transition-opacity duration-200 ${showSloganTerm ? 'opacity-100' : 'opacity-0'
+                    }`}
                 >
                   {HERO_SLOGAN_TERMS[sloganTermIndex]}
                 </span>
@@ -169,8 +168,8 @@ export default function Home() {
                   <p className="text-xs text-white/70">Universities in NIAT ecosystem</p>
                 </div>
                 <div className="rounded-xl bg-white/10 p-3">
-                  <p className="text-3xl font-bold text-white">{globalGuideArticles.length}+</p>
-                  <p className="text-xs text-white/70">Guides written by students</p>
+                  <p className="text-3xl font-bold text-white">200+</p>
+                  <p className="text-xs text-white/70">Student insiders already onboarded</p>
                 </div>
                 <Link
                   href="/campuses"
@@ -253,6 +252,7 @@ export default function Home() {
       {/* Life in or At NIAT: videos + How-to Guides */}
       <section className="bg-section">
         <VideoCarousel />
+        {/* 
         <div className="py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#fefce8' }}>
           <div className="max-w-7xl mx-auto">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-black mb-2">
@@ -293,6 +293,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        */}
       </section>
 
       {/* Start Here - 3 main cards → guide sections */}

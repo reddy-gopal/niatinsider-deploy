@@ -8,16 +8,66 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "NIAT Insider",
+    default: "NIAT Insider | The Ultimate Guide to NIAT Campus Life & Admissions",
     template: "%s | NIAT Insider",
   },
-  description: "Student-written guides for every NIAT campus. Onboarding, food, clubs, placements and more.",
-  keywords: ["niat insider", "niat campus life", "niat student platform"],
-  metadataBase: new URL("https://niatinsider.com"),
+  description:
+    "Everything you need to know about NIAT. Read authentic student-written reviews, admission guides, campus life details, placements, clubs, and hostels at NIAT.",
+  keywords: [
+    "NIAT",
+    "niat insider",
+    "niat university",
+    "niat admissions",
+    "niat campus life",
+    "niat placements",
+    "niat btech reviews",
+    "niat hostel review",
+    "niat student platform",
+    "college guide india",
+  ],
+  metadataBase: new URL("https://www.niatinsider.com"),
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
   icons: {
-    icon: "/favicon.png",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [{ url: "/niat.svg", type: "image/svg+xml" }],
+    shortcut: ["/niat.svg"],
+    apple: ["/niat.svg"],
+  },
+  openGraph: {
+    type: "website",
+    url: "https://www.niatinsider.com",
+    siteName: "NIAT Insider",
+    title: "NIAT Insider | The Ultimate Guide to NIAT Campus Life & Admissions",
+    description:
+      "Everything you need to know about NIAT. Read authentic student-written reviews, admission guides, campus life details, placements, clubs, and hostels at NIAT.",
+    images: [
+      {
+        url: "/niat.svg",
+        width: 512,
+        height: 512,
+        alt: "NIAT Insider Logo",
+      },
+    ],
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NIAT Insider | The Ultimate Guide to NIAT Campus Life & Admissions",
+    description:
+      "Everything you need to know about NIAT. Read authentic student-written reviews, admission guides, campus life details, placements, clubs, and hostels at NIAT.",
+    images: ["/niat.svg"],
   },
 };
 
@@ -26,9 +76,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "NIAT Insider",
+    url: "https://www.niatinsider.com",
+    logo: "https://www.niatinsider.com/niat.svg",
+    sameAs: ["https://www.niatinsider.com"],
+  };
+
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
