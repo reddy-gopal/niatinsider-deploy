@@ -93,18 +93,33 @@ export default function ArticlesClient() {
   const categoryParam = searchParams.get('category');
   const campusParam = searchParams.get('campus');
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
+  const { campuses: apiCampuses } = useCampuses();
 
   const { categories: apiCategories } = useCategories();
   const apiCategorySlugs = useMemo(() => new Set(apiCategories.map((c) => c.slug)), [apiCategories]);
   const activeCategory = categoryParam && apiCategorySlugs.has(categoryParam) ? categoryParam : null;
-  const activeCampusId = campusParam ? String(campusParam) : null;
+  const activeCampusSlug = useMemo(() => {
+    if (!campusParam) return null;
+    const bySlug = apiCampuses.find((c) => c.slug === campusParam);
+    if (bySlug) return bySlug.slug;
+    // Backward compatibility for old URLs using campus UUID.
+    const byId = apiCampuses.find((c) => String(c.id) === campusParam);
+    return byId?.slug ?? null;
+  }, [campusParam, apiCampuses]);
+  const activeCampusId = useMemo(() => {
+    if (!campusParam) return null;
+    const bySlug = apiCampuses.find((c) => c.slug === campusParam);
+    if (bySlug) return String(bySlug.id);
+    const byId = apiCampuses.find((c) => String(c.id) === campusParam);
+    return byId ? String(byId.id) : null;
+  }, [campusParam, apiCampuses]);
   const validCampusId = activeCampusId ?? undefined;
 
-  const { campuses: apiCampuses } = useCampuses();
   const { articles: apiArticles, loading: articlesLoading, error: articlesError, isNetworkError } = usePublishedArticles({
     ...(validCampusId != null && { campus: validCampusId }),
     ...(activeCategory && { category: activeCategory }),
   });
+  const { articles: allPublishedArticles } = usePublishedArticles();
 
   const displayArticles = useMemo(() => {
     let result = apiArticles.map(apiArticleToPageArticle);
@@ -121,7 +136,7 @@ export default function ArticlesClient() {
 
   const campusArticleCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const a of apiArticles) {
+    for (const a of allPublishedArticles) {
       const cid = a.campus_id;
       if (cid != null) {
         const key = String(cid);
@@ -129,7 +144,7 @@ export default function ArticlesClient() {
       }
     }
     return counts;
-  }, [apiArticles]);
+  }, [allPublishedArticles]);
 
   const setCategory = (slug: string | null) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -139,9 +154,9 @@ export default function ArticlesClient() {
     router.push(qs ? `${pathname}?${qs}` : pathname);
   };
 
-  const setCampus = (id: string | null) => {
+  const setCampus = (slug: string | null) => {
     const next = new URLSearchParams(searchParams.toString());
-    if (id !== null && id !== '') next.set('campus', String(id));
+    if (slug !== null && slug !== '') next.set('campus', slug);
     else next.delete('campus');
     const qs = next.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -202,8 +217,8 @@ export default function ArticlesClient() {
                 onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-[rgba(30,41,59,0.1)] rounded-md text-sm font-medium text-[#1e293b] hover:bg-gray-50"
               >
-                {activeCampusId != null
-                  ? apiCampuses.find((c) => String(c.id) === activeCampusId)?.name ?? 'All Campuses'
+                {activeCampusSlug != null
+                  ? apiCampuses.find((c) => c.slug === activeCampusSlug)?.name ?? 'All Campuses'
                   : 'All Campuses'}
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -216,7 +231,7 @@ export default function ArticlesClient() {
                   <div className="absolute right-0 mt-1 z-50 w-56 bg-white rounded-lg shadow-lg border border-[rgba(30,41,59,0.1)] py-1">
                     <button
                       onClick={() => setCampus(null)}
-                      className={`w-full text-left px-4 py-2 text-sm ${activeCampusId === null ? 'bg-[#fbf2f3] text-[#991b1b] font-medium' : 'text-[#1e293b] hover:bg-gray-50'
+                      className={`w-full text-left px-4 py-2 text-sm ${activeCampusSlug === null ? 'bg-[#fbf2f3] text-[#991b1b] font-medium' : 'text-[#1e293b] hover:bg-gray-50'
                         }`}
                     >
                       All Campuses
@@ -224,8 +239,8 @@ export default function ArticlesClient() {
                     {apiCampuses.map((c) => (
                       <button
                         key={c.id}
-                        onClick={() => setCampus(String(c.id))}
-                        className={`w-full text-left px-4 py-2 text-sm flex justify-between ${activeCampusId === String(c.id) ? 'bg-[#fbf2f3] text-[#991b1b] font-medium' : 'text-[#1e293b] hover:bg-gray-50'
+                        onClick={() => setCampus(c.slug)}
+                        className={`w-full text-left px-4 py-2 text-sm flex justify-between ${activeCampusSlug === c.slug ? 'bg-[#fbf2f3] text-[#991b1b] font-medium' : 'text-[#1e293b] hover:bg-gray-50'
                           }`}
                       >
                         {c.name}

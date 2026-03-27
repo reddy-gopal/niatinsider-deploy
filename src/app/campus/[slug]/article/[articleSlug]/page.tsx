@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Clock, Pencil, Trash2, MoreVertical, ThumbsUp, Eye } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
@@ -11,7 +13,7 @@ import { ArticleSuggestionForm } from '@/components/ArticleSuggestionForm';
 import { ArticleStructuredData } from '@/components/ArticleStructuredData';
 import { useCampuses } from '@/hooks/useCampuses';
 import { CATEGORY_CONFIG } from '@/data/articleCategories';
-import { useArticleDetail } from '@/hooks/useArticles';
+import { useArticleDetail, usePublishedArticles } from '@/hooks/useArticles';
 import { useUpvote } from '@/hooks/useUpvote';
 import { articleService } from '@/lib/articleService';
 import { fetchMe } from '@/lib/authApi';
@@ -25,6 +27,21 @@ function stripImageCardsFromHtml(html: string): string {
   const cards = div.querySelectorAll('.article-image-card');
   cards.forEach((el) => el.remove());
   return div.innerHTML.trim();
+}
+
+function resolveAuthorLinkedIn(article: unknown): string | null {
+  if (!article || typeof article !== 'object') return null;
+  const candidate = article as Record<string, unknown>;
+  const raw =
+    candidate.author_linkedin_profile ??
+    candidate.author_linkedin ??
+    candidate.linkedin_profile;
+  if (typeof raw !== 'string') return null;
+  const value = raw.trim();
+  if (!value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  const handle = value.replace(/^@/, '');
+  return `https://www.linkedin.com/in/${handle}`;
 }
 
 export default function Article() {
@@ -42,8 +59,24 @@ export default function Article() {
   }, [apiCampuses, campusSlug]);
 
   const { article: apiArticle, loading, error } = useArticleDetail(articleSlugParam);
+  const authorLinkedIn = useMemo(() => resolveAuthorLinkedIn(apiArticle), [apiArticle]);
   const fromApi = !loading && !!apiArticle;
   const notFound = !loading && articleSlugParam != null && !apiArticle;
+  const relatedFilterParams = fromApi && apiArticle
+    ? {
+        ...(apiArticle.campus_id ? { campus: String(apiArticle.campus_id) } : {}),
+        ...(apiArticle.category_id ? { category_id: String(apiArticle.category_id) } : {}),
+        page_size: 6,
+      }
+    : undefined;
+  const { articles: primaryRelatedArticles } = usePublishedArticles(
+    relatedFilterParams,
+    { enabled: !!(fromApi && apiArticle) }
+  );
+  const { articles: latestPublishedArticles } = usePublishedArticles(
+    { page_size: 12 },
+    { enabled: !!(fromApi && apiArticle) }
+  );
 
   const article = loading
     ? {
@@ -133,6 +166,38 @@ export default function Article() {
         ? [article.coverImage]
         : [];
   const hasMultipleImages = articleImages.length > 1;
+  const campusSlugForId = (id: string | number | null | undefined): string | null => {
+    if (id == null) return null;
+    if (String(id) === String(campus?.id ?? '')) return campusSlug;
+    return apiCampuses.find((c) => String(c.id) === String(id))?.slug ?? null;
+  };
+  const relatedArticles = useMemo(() => {
+    if (!fromApi || !apiArticle) return [];
+    const currentSlug = apiArticle.slug;
+    const seen = new Set<string>([currentSlug]);
+    const merged: typeof primaryRelatedArticles = [];
+
+    for (const item of primaryRelatedArticles) {
+      if (!item?.slug || seen.has(item.slug)) continue;
+      seen.add(item.slug);
+      merged.push(item);
+      if (merged.length >= 3) return merged;
+    }
+    for (const item of latestPublishedArticles) {
+      if (!item?.slug || seen.has(item.slug)) continue;
+      seen.add(item.slug);
+      merged.push(item);
+      if (merged.length >= 3) break;
+    }
+    return merged;
+  }, [fromApi, apiArticle, primaryRelatedArticles, latestPublishedArticles]);
+  const relatedCtaCampusSlug = fromApi && apiArticle
+    ? (campusSlugForId(apiArticle.campus_id) ?? campusSlug)
+    : campusSlug;
+  const relatedCtaHref = relatedCtaCampusSlug ? `/articles?campus=${relatedCtaCampusSlug}` : '/articles';
+  const relatedCtaLabel = fromApi && apiArticle?.campus_name
+    ? `See all ${apiArticle.campus_name} articles \u2192`
+    : 'See all articles \u2192';
 
   useEffect(() => {
     fetchMe().then((me) => setCurrentUsername(me?.username ?? null));
@@ -389,20 +454,35 @@ export default function Article() {
         )}
 
         {/* Meta Row — below body */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-black mb-6 pb-6 border-t border-[rgba(30,41,59,0.1)] pt-6">
-          <span>Written by {article.author}</span>
-          <span className="flex items-center">
-            <Clock className="h-4 w-4 mr-1" />
-            Last updated {article.updatedDays} days ago
-          </span>
-          <span className="flex items-center gap-1">
-            <ThumbsUp className="h-4 w-4" />
-            {displayUpvoteCount} upvote{displayUpvoteCount !== 1 ? 's' : ''}
-          </span>
-          <span className="flex items-center gap-1">
-            <Eye className="h-4 w-4" />
-            {displayViewCount} view{displayViewCount !== 1 ? 's' : ''}
-          </span>
+        <div className="text-sm text-black mb-6 pb-6 border-t border-[rgba(30,41,59,0.1)] pt-6 space-y-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span>Written by {article.author}</span>
+            {authorLinkedIn && (
+              <a
+                href={authorLinkedIn}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[#0a66c2] hover:underline"
+              >
+                <FontAwesomeIcon icon={faLinkedin} style={{ color: 'rgb(52, 101, 216)' }} />
+                LinkedIn
+              </a>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              Last updated {article.updatedDays} days ago
+            </span>
+            <span className="flex items-center gap-1">
+              <ThumbsUp className="h-4 w-4" />
+              {displayUpvoteCount} upvote{displayUpvoteCount !== 1 ? 's' : ''}
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              {displayViewCount} view{displayViewCount !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
 
         {/* Upvote + Suggest (API articles only) — below body */}
@@ -429,6 +509,54 @@ export default function Article() {
               />
             )}
           </div>
+        )}
+
+        {relatedArticles.length > 0 && (
+          <section className="mb-8">
+            <h2 className="font-display text-xl md:text-2xl font-bold text-[#1e293b] mb-4">
+              More from NIAT Insider
+            </h2>
+            <div className="divide-y divide-[rgba(30,41,59,0.08)]">
+              {relatedArticles.map((related) => {
+                const relatedCampusSlug = campusSlugForId(related.campus_id);
+                const relatedHref = relatedCampusSlug
+                  ? `/campus/${relatedCampusSlug}/article/${related.slug}`
+                  : `/article/${related.slug}`;
+                return (
+                  <Link
+                    key={related.id}
+                    href={relatedHref}
+                    className="group flex gap-4 py-4 border-l-[3px] border-l-transparent pl-3 transition-all duration-150 ease-out hover:border-l-[#991b1b]"
+                  >
+                    {related.cover_image && (
+                      <div className="w-24 h-24 md:w-32 md:h-24 shrink-0 rounded-xl overflow-hidden hidden sm:block">
+                        <ImageWithFallback src={related.cover_image} alt={related.title} loading="lazy" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-[18px] md:text-[20px] leading-snug font-bold text-[#1e293b] mb-1 line-clamp-2 group-hover:text-[#991b1b]">
+                        {related.title}
+                      </h3>
+                      <p className="text-[15px] leading-relaxed text-[#334155] line-clamp-2 mb-2">
+                        {related.excerpt}
+                      </p>
+                      <p className="text-[13px] text-[#64748b]">
+                        {related.campus_name || 'Global'} · Updated {related.updated_days} days ago
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="mt-6 text-center">
+              <Link
+                href={relatedCtaHref}
+                className="inline-flex items-center gap-1 text-[#991b1b] font-medium text-sm hover:underline"
+              >
+                {relatedCtaLabel}
+              </Link>
+            </div>
+          </section>
         )}
 
         {/* Delete confirmation modal */}

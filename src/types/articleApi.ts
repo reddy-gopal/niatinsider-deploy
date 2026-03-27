@@ -28,6 +28,7 @@ export interface ApiArticle {
   subcategory: string;
   subcategory_other: string;
   author_username: string;
+  author_linkedin_profile?: string | null;
   published_at: string | null;
   updated_at: string;
   updated_days: number;

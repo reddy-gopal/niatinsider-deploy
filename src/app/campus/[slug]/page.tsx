@@ -303,7 +303,7 @@ export default function Campus() {
           </div>
 
           <Link
-            href={`/articles${campusId ? `?campus=${campusId}` : ''}`}
+            href={`/articles${slugForLinks ? `?campus=${slugForLinks}` : ''}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#991b1b] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
           >
             Know more <ChevronRight className="h-4 w-4" />
@@ -501,7 +501,7 @@ export default function Campus() {
             </div>
           )}
           <Link
-            href={`/articles${campusId ? `?campus=${campusId}` : ''}`}
+            href={`/articles${slugForLinks ? `?campus=${slugForLinks}` : ''}`}
             className="inline-flex items-center gap-1.5 text-[#991b1b] font-medium text-sm hover:underline"
           >
             Know more <ChevronRight className="h-4 w-4" />
@@ -542,7 +542,7 @@ export default function Campus() {
             </div>
           )}
           <Link
-            href={`/articles${campusId ? `?campus=${campusId}` : ''}`}
+            href={`/articles${slugForLinks ? `?campus=${slugForLinks}` : ''}`}
             className="inline-flex items-center gap-1.5 text-[#991b1b] font-medium text-sm hover:underline"
           >
             Know more <ChevronRight className="h-4 w-4" />
