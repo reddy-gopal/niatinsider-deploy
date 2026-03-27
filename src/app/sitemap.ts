@@ -38,10 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   let campusRoutes: MetadataRoute.Sitemap = []
-  let campusClubRoutes: MetadataRoute.Sitemap = []
   let articleRoutes: MetadataRoute.Sitemap = []
-  let clubDetailRoutes: MetadataRoute.Sitemap = []
-  const campusIdToSlug = new Map<string, string>()
 
   try {
     const campusRes = await fetch(`${API_BASE}/api/campuses/`, {
@@ -50,19 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (campusRes.ok) {
       const data = await campusRes.json()
       const campuses: CampusApi[] = data.results ?? data
-      campuses.forEach((c) => {
-        if (c.id != null) campusIdToSlug.set(String(c.id), c.slug)
-      })
       campusRoutes = campuses.map((c) => ({
         url: `${BASE_URL}/campus/${c.slug}`,
         lastModified: safeDate(c.updated_at),
         priority: 0.9,
-        changeFrequency: 'weekly' as const,
-      }))
-      campusClubRoutes = campuses.map((c) => ({
-        url: `${BASE_URL}/campus/${c.slug}/clubs`,
-        lastModified: safeDate(c.updated_at),
-        priority: 0.75,
         changeFrequency: 'weekly' as const,
       }))
     }
@@ -98,39 +86,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // API unavailable at build time — skip dynamic article routes
   }
 
-  try {
-    const clubs: ClubsApi[] = []
-    let nextUrl: string | null = `${API_BASE}/api/clubs/?page_size=100`
-    while (nextUrl) {
-      const clubsRes: Response = await fetch(nextUrl, { next: { revalidate: 3600 } })
-      if (!clubsRes.ok) break
-      const data: { results?: ClubsApi[]; next?: string | null } | ClubsApi[] = await clubsRes.json()
-      const batch: ClubsApi[] = Array.isArray(data) ? data : (data.results ?? [])
-      clubs.push(...batch)
-      nextUrl = !Array.isArray(data) && typeof data.next === 'string' && data.next.length > 0 ? data.next : null
-    }
-
-    clubDetailRoutes = clubs.reduce<MetadataRoute.Sitemap>((acc, club) => {
-      if (!club.slug || !club.campus_id) return acc
-      const campusSlug = campusIdToSlug.get(String(club.campus_id))
-      if (!campusSlug) return acc
-      acc.push({
-        url: `${BASE_URL}/campus/${campusSlug}/clubs/${club.slug}`,
-        lastModified: safeDate(club.updated_at),
-        priority: 0.7,
-        changeFrequency: 'weekly',
-      })
-      return acc
-    }, [])
-  } catch {
-    // API unavailable at build time — skip dynamic clubs routes
-  }
-
   return [
     ...staticRoutes,
     ...campusRoutes,
-    ...campusClubRoutes,
-    ...clubDetailRoutes,
     ...articleRoutes,
   ]
 }
