@@ -76,7 +76,7 @@ export default function MyArticles() {
                 <li key={a.id} className="p-4 rounded-xl border border-[rgba(30,41,59,0.1)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Link
-                      href={a.campus_id ? `/campus/${getCampusSlug(a.campus_id)}/article/${a.slug || a.id}` : `/article/${a.slug || a.id}`}
+                      href={a.campus_id ? `/campus/${getCampusSlug(a.campus_id)}/article/${a.slug}` : `/article/${a.slug}`}
                       className="font-medium text-[#991b1b] hover:underline"
                     >
                       {a.title}

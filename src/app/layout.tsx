@@ -54,10 +54,10 @@ export const metadata: Metadata = {
       "Everything you need to know about NIAT. Read authentic student-written reviews, admission guides, campus life details, placements, clubs, and hostels at NIAT.",
     images: [
       {
-        url: "/niat.svg",
-        width: 512,
-        height: 512,
-        alt: "NIAT Insider Logo",
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "NIAT Insider",
       },
     ],
     locale: "en_IN",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "NIAT Insider | The Ultimate Guide to NIAT Campus Life & Admissions",
     description:
       "Everything you need to know about NIAT. Read authentic student-written reviews, admission guides, campus life details, placements, clubs, and hostels at NIAT.",
-    images: ["/niat.svg"],
+    images: ["/og-default.png"],
   },
 };
 

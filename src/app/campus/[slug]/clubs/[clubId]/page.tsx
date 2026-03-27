@@ -266,7 +266,7 @@ export default function ClubDetail() {
                 return (
                   <Link
                     key={article.id}
-                    href={`/campus/${campusSlug ?? ''}/article/${article.slug || article.id}`}
+                    href={`/campus/${campusSlug ?? ''}/article/${article.slug}`}
                     className="block p-4 rounded-xl border border-[rgba(30,41,59,0.08)] hover:bg-[#fbf2f3] hover:border-[rgba(153,27,27,0.2)] transition-colors"
                   >
                     <div className="flex flex-wrap gap-2 mb-2">

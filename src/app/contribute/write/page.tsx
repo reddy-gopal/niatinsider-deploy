@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -114,7 +114,7 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-[rgba(30,41,59,0.15)] mx-1" />;
 }
 
-export default function WriteArticle() {
+function WriteArticleClientContent() {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -618,8 +618,13 @@ export default function WriteArticle() {
           href="/"
           className="flex items-center gap-1.5 text-[#1e293b] hover:opacity-90 transition-opacity shrink-0"
         >
-          <span className="font-display text-lg sm:text-xl font-bold text-[#991b1b]">NIAT</span>
-          <span className="font-body text-base sm:text-lg font-medium text-black">Insider</span>
+          <img
+            src="/niat.svg"
+            alt="NIAT"
+            className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
+          />
+          <span className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[#991b1b]">NIAT</span>
+          <span className="font-display text-lg sm:text-xl font-bold tracking-tight text-black">Insider</span>
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -639,7 +644,7 @@ export default function WriteArticle() {
               type="button"
               onClick={handleSubmit}
               disabled={submitLoading}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-md bg-[#991b1b] text-white hover:bg-[#b91c1c] transition-colors text-xs sm:text-sm font-medium disabled:opacity-60"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-md bg-[#991b1b] text-white hover:bg-[#b91c1c] transition-colors text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitLoading ? (
                 <span className="inline-flex items-center gap-2">
@@ -1388,5 +1393,13 @@ export default function WriteArticle() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function WriteArticlePage() {
+  return (
+    <Suspense fallback={null}>
+      <WriteArticleClientContent />
+    </Suspense>
   );
 }

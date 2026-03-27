@@ -293,7 +293,7 @@ export default function Campus() {
             {thirtyDaysArticles.map((article) => (
               <Link
                 key={article.id}
-                href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug || article.id}` : `/article/${article.slug || article.id}`}
+                href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
                 className="block bg-white rounded-lg shadow-card p-5 border-l-4 border-[#991b1b] hover:border-[#7f1d1d] transition-colors"
               >
                 <h3 className="font-bold text-black mb-2">{article.title.replace('Your first month at NIAT — ', '')}</h3>
@@ -483,7 +483,7 @@ export default function Campus() {
               {foodArticles.map((article) => (
                 <Link
                   key={article.id}
-                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug || article.id}` : `/article/${article.slug || article.id}`}
+                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
                   className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
                 >
                   {article.coverImage && (
@@ -524,7 +524,7 @@ export default function Campus() {
               {livingArticles.map((article) => (
                 <Link
                   key={article.id}
-                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug || article.id}` : `/article/${article.slug || article.id}`}
+                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
                   className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
                 >
                   {article.coverImage && (

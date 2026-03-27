@@ -79,7 +79,7 @@ export default function HowToGuides() {
         {featuredGuide && (
           <section className="mb-12">
             <Link
-              href={`/article/${featuredGuide.slug || featuredGuide.id}`}
+              href={`/article/${featuredGuide.slug}`}
               className="block rounded-xl overflow-hidden shadow-card hover:shadow-lg border border-[rgba(30,41,59,0.08)] hover:border-[#991b1b]/30 transition-all"
             >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white">
@@ -138,7 +138,7 @@ export default function HowToGuides() {
               {filteredGuides.map((guide) => (
                 <Link
                   key={guide.id}
-                  href={`/article/${guide.slug || guide.id}`}
+                  href={`/article/${guide.slug}`}
                   className="block bg-white rounded-xl shadow-card overflow-hidden hover:shadow-lg border border-transparent hover:border-[#991b1b] transition-all"
                 >
                   {guide.cover_image && (

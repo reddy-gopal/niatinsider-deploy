@@ -30,9 +30,9 @@ function stripImageCardsFromHtml(html: string): string {
 export default function Article() {
   const params = useParams();
   const campusSlug = params.slug as string;
-  const articleId = params.articleId as string;
+  const articleSlug = params.articleSlug as string;
   const isGlobalRoute = !campusSlug;
-  const articleIdParam = articleId?.trim() || null;
+  const articleSlugParam = articleSlug?.trim() || null;
 
   const { campuses: apiCampuses } = useCampuses();
   const campus = useMemo(() => {
@@ -41,9 +41,9 @@ export default function Article() {
     return item ?? null;
   }, [apiCampuses, campusSlug]);
 
-  const { article: apiArticle, loading, error } = useArticleDetail(articleIdParam);
+  const { article: apiArticle, loading, error } = useArticleDetail(articleSlugParam);
   const fromApi = !loading && !!apiArticle;
-  const notFound = !loading && articleIdParam != null && !apiArticle;
+  const notFound = !loading && articleSlugParam != null && !apiArticle;
 
   const article = loading
     ? {
@@ -140,7 +140,7 @@ export default function Article() {
 
   useEffect(() => {
     setCarouselIndex(0);
-  }, [articleIdParam]);
+  }, [articleSlugParam]);
 
   const isAuthor = fromApi && apiArticle && currentUsername && apiArticle.author_username === currentUsername;
 

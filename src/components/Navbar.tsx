@@ -151,6 +151,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   placeholder="Search campus, topic, or article..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  suppressHydrationWarning
                   className="w-full pl-10 pr-4 py-2 bg-white border border-[rgba(30,41,59,0.1)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-transparent"
                 />
               </div>
@@ -221,7 +222,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                           <div className="flex flex-col sm:flex-row max-h-[min(70vh,420px)]">
                             {/* Left column - Browse by Category */}
                             <div className="w-full sm:w-[220px] shrink-0 p-4 border-b sm:border-b-0 sm:border-r border-[rgba(30,41,59,0.08)]">
-                              <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">
+                              <h4 className="font-display text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">
                                 Browse by Category
                               </h4>
                               <ul className="space-y-0.5">
@@ -255,7 +256,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
 
                             {/* Right column - Recently Updated only (scrollable) */}
                             <div className="flex-1 min-w-0 flex flex-col p-4">
-                              <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 shrink-0">
+                              <h4 className="font-display text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 shrink-0">
                                 Recently Updated
                               </h4>
                               <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 rounded-lg -mx-1 px-1 scroll-smooth">
@@ -281,7 +282,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                                         onClick={() => setArticlesDropdownOpen(false)}
                                         className="block p-2 rounded-lg hover:bg-[#fbf2f3] transition-colors group"
                                       >
-                                        <h5 className="font-playfair text-sm font-bold text-[#1e293b] line-clamp-1 group-hover:text-[#991b1b]">
+                                        <h5 className="font-display text-sm font-bold text-[#1e293b] line-clamp-1 group-hover:text-[#991b1b]">
                                           {a.title}
                                         </h5>
                                         <div className="flex flex-wrap gap-1 mt-1">
@@ -414,6 +415,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                       placeholder="Search campus, topic, or article..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
+                      suppressHydrationWarning
                       className="w-full pl-10 pr-4 py-2 bg-white border border-[rgba(30,41,59,0.1)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
                     />
                   </div>

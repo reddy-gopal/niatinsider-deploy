@@ -18,6 +18,17 @@ const HOW_TO_GUIDES_URL = '/how-to-guides';
 
 const HOME_CAMPUS_PREVIEW_COUNT = 6;
 const HERO_SLOGAN_TERMS = ['Campus Life', 'Onboarding Kit', 'Clubs', 'Hackathons', 'Internships'];
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'NIAT Insider',
+  url: 'https://www.niatinsider.com',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://www.niatinsider.com/search?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 export default function Home() {
   const { campuses: apiCampuses, isLoading: campusesLoading, isError: campusesError } = useCampuses();
@@ -106,6 +117,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <Navbar showSearch={showNavSearch} />
 
       {/* Hero Section */}
@@ -140,6 +152,7 @@ export default function Home() {
                     placeholder="Find your campus — type name or city"
                     value={heroSearch}
                     onChange={(e) => setHeroSearch(e.target.value)}
+                    suppressHydrationWarning
                     className="w-full pl-12 pr-4 py-4 bg-white rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
                 </div>
@@ -265,7 +278,7 @@ export default function Home() {
               {topGlobalGuides.map((guide) => (
                 <Link
                   key={guide.id}
-                  href={`/article/${guide.slug || guide.id}`}
+                  href={`/article/${guide.slug}`}
                   className="block bg-white rounded-xl shadow-card p-5 hover:shadow-lg hover:border-[#991b1b] transition-all border border-transparent"
                 >
                   <h3 className="font-display text-lg font-bold text-[#1e293b] mb-2 line-clamp-2">

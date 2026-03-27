@@ -22,7 +22,7 @@ interface Article {
 }
 
 interface PageProps {
-  params: Promise<{ articleId: string }>
+  params: Promise<{ slug: string }>
 }
 
 const DEFAULT_FALLBACK_IMAGE = 'https://www.niatinsider.com/default-og.png'
@@ -37,16 +37,11 @@ function toAbsoluteUrl(path: string): string {
 
 function cleanKeywords(keywords: string[] | null): string[] {
   if (!Array.isArray(keywords)) return []
-  return keywords
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0)
-    .slice(0, 15)
+  return keywords.map((k) => k.trim()).filter((k) => k.length > 0).slice(0, 15)
 }
 
 function getPrimaryImage(article: Article): string {
-  if (article.cover_image) {
-    return toAbsoluteUrl(article.cover_image)
-  }
+  if (article.cover_image) return toAbsoluteUrl(article.cover_image)
   if (Array.isArray(article.images) && article.images.length > 0 && article.images[0]?.image) {
     return toAbsoluteUrl(article.images[0].image)
   }
@@ -67,12 +62,9 @@ function buildDescription(article: Article): string {
   return 'Read the latest from NIAT Insider.'
 }
 
-const fetchArticle = async (articleId: string): Promise<Article | null> => {
+const fetchArticle = async (slug: string): Promise<Article | null> => {
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/api/articles/articles/${articleId}/`,
-      { next: { revalidate: 60 } }
-    )
+    const res = await fetch(`${API_BASE_URL}/api/articles/articles/${slug}/`, { next: { revalidate: 60 } })
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -81,17 +73,14 @@ const fetchArticle = async (articleId: string): Promise<Article | null> => {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { articleId } = await params
-  const article = await fetchArticle(articleId)
+  const { slug } = await params
+  const article = await fetchArticle(slug)
 
   if (!article || article.status !== 'published') {
     return {
-      title: article ? article.title.substring(0, 50) : 'Not Found',
-      robots: {
-        index: false,
-        follow: false,
-        nocache: true,
-      },
+      title: 'Article Not Found',
+      description: `The article "${slug}" is unavailable on NIAT Insider.`,
+      robots: { index: false, follow: false, nocache: true },
     }
   }
 
@@ -105,24 +94,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     keywords: keywords.length > 0 ? keywords : undefined,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    alternates: { canonical: canonicalUrl },
+    robots: { index: true, follow: true },
     openGraph: {
       type: 'article',
       url: canonicalUrl,
       title,
       description,
-      images: [
-        {
-          url: imageUrl,
-          alt: title,
-        },
-      ],
+      images: [{ url: imageUrl, alt: title }],
       publishedTime: article.published_at || article.created_at,
       modifiedTime: article.updated_at,
       authors: [article.author_username],
@@ -143,10 +122,10 @@ export default async function ArticleLayout({
   params,
 }: {
   children: React.ReactNode
-  params: Promise<{ articleId: string }>
+  params: Promise<{ slug: string }>
 }) {
-  const { articleId } = await params
-  const article = await fetchArticle(articleId)
+  const { slug } = await params
+  const article = await fetchArticle(slug)
 
   let structuredData = null
   if (article && article.status === 'published') {
@@ -159,16 +138,10 @@ export default async function ArticleLayout({
       headline: article.meta_title?.trim() || article.title,
       description: buildDescription(article),
       image: imageUrl,
-      author: {
-        '@type': 'Person',
-        name: article.author_username,
-      },
+      author: { '@type': 'Person', name: article.author_username },
       datePublished: article.published_at || article.created_at,
       dateModified: article.updated_at,
-      mainEntityOfPage: {
-        '@type': 'WebPage',
-        '@id': canonicalUrl,
-      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
     }
   }
 

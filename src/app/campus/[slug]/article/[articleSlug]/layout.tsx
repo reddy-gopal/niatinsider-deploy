@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-interface Props { params: Promise<{ slug: string; articleId: string }> }
+interface Props { params: Promise<{ slug: string; articleSlug: string }> }
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, articleId } = await params
+  const { slug, articleSlug } = await params
   try {
     const res = await fetch(
-      `${API_BASE_URL}/api/articles/articles/${articleId}/`,
+      `${API_BASE_URL}/api/articles/articles/${articleSlug}/`,
       { next: { revalidate: 3600 } }
     )
     if (!res.ok) throw new Error()
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: { absolute: title },
       description,
       keywords,
-      alternates: { canonical: `/campus/${slug}/article/${articleId}` },
+      alternates: { canonical: `/campus/${slug}/article/${article.slug}` },
       robots: {
         index: true,
         follow: true,
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title,
         description,
-        url: `/campus/${slug}/article/${articleId}`,
+        url: `/campus/${slug}/article/${article.slug}`,
         type: 'article',
         publishedTime: article.published_at,
         authors: [article.author_username],
@@ -58,9 +58,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     }
   } catch {
-    // Fallback exactly to interpreting the slug
-    const fallbackTitle = articleId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-    return { title: { absolute: fallbackTitle } }
+    return {
+      title: 'Campus Article — NIAT Insider',
+      description: `Read this student article from ${slug} campus on NIAT Insider.`,
+    }
   }
 }
 export default function ArticleLayout({ children }: { children: React.ReactNode }) {
