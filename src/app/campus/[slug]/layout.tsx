@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.niatinsider.com'
+import { API_BASE } from '../../../lib/apiBase'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
@@ -8,7 +7,7 @@ export async function generateMetadata(
   const { slug } = await params
   try {
     const res = await fetch(
-      `${apiBase}/api/campuses/${slug}/`,
+      `${API_BASE}/api/campuses/${slug}/`,
       { next: { revalidate: 3600 } }
     )
     if (!res.ok) throw new Error('not found')

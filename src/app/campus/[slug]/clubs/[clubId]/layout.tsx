@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
+import { API_BASE } from '../../../../../lib/apiBase'
 interface Props { params: Promise<{ slug: string; clubId: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, clubId } = await params
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/clubs/${clubId}/`,
+      `${API_BASE}/api/clubs/${clubId}/`,
       { next: { revalidate: 3600 } }
     )
     if (!res.ok) throw new Error()

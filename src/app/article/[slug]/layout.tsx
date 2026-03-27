@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { API_BASE } from '../../../lib/apiBase'
 
 interface Article {
   id: string
@@ -27,7 +28,6 @@ interface PageProps {
 
 const DEFAULT_FALLBACK_IMAGE = 'https://www.niatinsider.com/default-og.png'
 const SITE_URL = 'https://www.niatinsider.com'
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 function toAbsoluteUrl(path: string): string {
   if (path.startsWith('http')) return path
@@ -64,7 +64,7 @@ function buildDescription(article: Article): string {
 
 const fetchArticle = async (slug: string): Promise<Article | null> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/articles/articles/${slug}/`, { next: { revalidate: 60 } })
+    const res = await fetch(`${API_BASE}/api/articles/articles/${slug}/`, { next: { revalidate: 60 } })
     if (!res.ok) return null
     return await res.json()
   } catch {

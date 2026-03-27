@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
+import { API_BASE } from '../lib/apiBase'
 
 const BASE_URL = 'https://www.niatinsider.com'
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 type CampusApi = {
   id?: string
