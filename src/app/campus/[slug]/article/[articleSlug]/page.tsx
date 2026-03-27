@@ -456,7 +456,15 @@ export default function Article() {
         {/* Meta Row — below body */}
         <div className="text-sm text-black mb-6 pb-6 border-t border-[rgba(30,41,59,0.1)] pt-6 space-y-3">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <span>Written by {article.author}</span>
+            <span>
+              Written by{' '}
+              <Link
+                href={`/author/${article.author}`}
+                className="font-medium text-[#991b1b] hover:underline"
+              >
+                {article.author}
+              </Link>
+            </span>
             {authorLinkedIn && (
               <a
                 href={authorLinkedIn}
