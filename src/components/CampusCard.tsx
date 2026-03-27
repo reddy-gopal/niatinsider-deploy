@@ -13,6 +13,7 @@ function CampusCard({ campus }: CampusCardProps) {
   return (
     <Link
       href={`/campus/${campus.slug}`}
+      prefetch={false}
       className="block bg-section rounded-lg border border-transparent shadow-card overflow-hidden hover:shadow-lg hover:border-[#991b1b]/30 transition-all duration-200 will-change-transform hover:-translate-y-0.5"
     >
       {/* Campus Image Area */}
