@@ -54,7 +54,7 @@ export const articleService = {
   incrementView(articleId: string | number) {
     return articlesApi.post<{ ok: boolean }>(`articles/${articleId}/view/`);
   },
-  /** POST to http://localhost:8000/api/articles/articles/ — creates article with status pending_review when save_as_draft is false */
+  /** Creates article with status pending_review when save_as_draft is false. */
   create(payload: ArticleWritePayload) {
     return articlesApi.post<ApiArticle>('articles/', payload);
   },

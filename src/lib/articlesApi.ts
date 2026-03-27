@@ -1,10 +1,9 @@
 import axios from 'axios';
+import { API_BASE } from './apiBase';
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
-
-/** Base URL: trailing slash so POST 'articles/' → http://localhost:8000/api/articles/articles/ */
+/** Base URL: trailing slash so POST 'articles/' -> /api/articles/articles/ */
 export const articlesApi = axios.create({
-  baseURL: `${BASE}/api/articles/`,
+  baseURL: `${API_BASE}/api/articles/`,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -23,7 +22,7 @@ articlesApi.interceptors.response.use(
       const refresh = localStorage.getItem('niat_refresh');
       if (refresh) {
         try {
-          const { data } = await axios.post<{ access: string }>(`${BASE}/api/token/refresh/`, { refresh });
+          const { data } = await axios.post<{ access: string }>(`${API_BASE}/api/token/refresh/`, { refresh });
           localStorage.setItem('niat_access', data.access);
           document.cookie = `niat_access=${data.access}; path=/; max-age=86400`;
           if (original.headers) original.headers.Authorization = `Bearer ${data.access}`;

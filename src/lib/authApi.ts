@@ -1,15 +1,14 @@
 import axios from 'axios';
-
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
+import { API_BASE } from './apiBase';
 
 const api = axios.create({
-  baseURL: `${BASE}/api`,
+  baseURL: `${API_BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 /** Axios instance for auth endpoints; retries with refresh token on 401. */
 const authApi = axios.create({
-  baseURL: `${BASE}/api`,
+  baseURL: `${API_BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -28,7 +27,7 @@ authApi.interceptors.response.use(
       const refresh = localStorage.getItem('niat_refresh');
       if (refresh) {
         try {
-          const { data } = await axios.post<{ access: string }>(`${BASE}/api/token/refresh/`, { refresh });
+          const { data } = await axios.post<{ access: string }>(`${API_BASE}/api/token/refresh/`, { refresh });
           localStorage.setItem('niat_access', data.access);
           document.cookie = `niat_access=${data.access}; path=/; max-age=86400`;
           if (original.headers) original.headers.Authorization = `Bearer ${data.access}`;
@@ -161,7 +160,7 @@ export async function loginByUsernamePassword(
   username: string,
   password: string
 ): Promise<{ access: string; refresh: string }> {
-  const { data } = await axios.post<{ access: string; refresh: string }>(`${BASE}/api/token/`, {
+  const { data } = await axios.post<{ access: string; refresh: string }>(`${API_BASE}/api/token/`, {
     username,
     password,
   });

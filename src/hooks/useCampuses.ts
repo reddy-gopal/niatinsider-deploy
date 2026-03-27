@@ -1,8 +1,8 @@
 import useSWR from 'swr';
 import type { CampusListItem } from '../types/campusApi';
+import { API_BASE } from '../lib/apiBase';
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
-const url = `${BASE}/api/campuses/`;
+const url = `${API_BASE}/api/campuses/`;
 
 async function fetcher(): Promise<CampusListItem[]> {
   const res = await fetch(url);
