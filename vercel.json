@@ -3,10 +3,6 @@
     {
       "source": "/talk-to-seniors/:path*",
       "destination": "https://niat-ama.vercel.app/talk-to-seniors/:path*"
-    },
-    {
-      "source": "/((?!assets/).*)",
-      "destination": "/index.html"
     }
   ]
 }
