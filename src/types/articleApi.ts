@@ -88,3 +88,9 @@ export interface ModerationPayload {
   rejection_reason?: string;
   featured?: boolean;
 }
+
+export interface LeaderboardWriter {
+  author_username: string;
+  article_count: number;
+  total_views: number;
+}

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE } from './apiBase';
+import type { LeaderboardWriter } from '@/types/articleApi';
 
 /** Base URL: trailing slash so POST 'articles/' -> /api/articles/articles/ */
 export const articlesApi = axios.create({
@@ -39,3 +40,29 @@ articlesApi.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+function normalizeLeaderboardResponse(
+  data: LeaderboardWriter[] | { results?: LeaderboardWriter[] } | null | undefined
+): LeaderboardWriter[] {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
+}
+
+export async function getLeaderboard(campusId: string): Promise<LeaderboardWriter[]> {
+  if (!campusId) return [];
+
+  const { data } = await articlesApi.get<LeaderboardWriter[] | { results?: LeaderboardWriter[] }>(
+    'articles/leaderboard/',
+    { params: { campus_id: campusId } }
+  );
+
+  return normalizeLeaderboardResponse(data)
+    .map((entry) => ({
+      author_username: entry.author_username,
+      article_count: Number(entry.article_count) || 0,
+      total_views: Number(entry.total_views) || 0,
+    }))
+    .sort((a, b) => b.total_views - a.total_views)
+    .slice(0, 3);
+}

@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import RecentUpdateCard from '@/components/RecentUpdateCard';
+import CampusLeaderboard from '@/components/CampusLeaderboard';
 import { CampusStructuredData } from '@/components/CampusStructuredData';
 import { ratings } from '@/data/mockData';
 import { CLUB_TYPE_BADGE_STYLES } from '@/constants/clubBadges';
@@ -279,6 +280,8 @@ export default function Campus() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <CampusLeaderboard campusSlug={campusSlug} className="mb-16" />
+
         {/* Section: 30 days at NIAT — global articles, same on all campuses */}
         <section ref={sectionRefs.week1} className="mb-16">
           <div className="flex items-center mb-4">
