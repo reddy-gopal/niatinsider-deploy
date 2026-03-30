@@ -13,13 +13,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     )
     if (!res.ok) throw new Error()
     const club = await res.json()
+    const description = club.chapter_description || club.objective || club.about || `Learn about ${club.name} at NIAT.`
     return {
       title: `${club.name} — Club at NIAT`,
-      description: club.about || `Learn about ${club.name} at NIAT.`,
+      description,
       alternates: { canonical: `/campus/${slug}/clubs/${clubId}` },
       openGraph: {
         title: `${club.name} — Club at NIAT`,
-        description: club.about || `Learn about ${club.name} at NIAT.`,
+        description,
         url: `/campus/${slug}/clubs/${clubId}`,
         type: 'website',
       },

@@ -1,21 +1,14 @@
-import type { ClubType } from './index';
-
 export interface ApiClub {
   id: number;
   campus_id?: string | null;
   campus_name?: string;
   name: string;
   slug: string;
-  type: ClubType;
   objective?: string;
-  about: string;
-  activities?: string;
-  achievements?: string;
+  about?: string;
   open_to_all?: boolean;
-  how_to_join?: string;
-  email?: string;
   instagram?: string;
-  founded_year?: number | null;
+  linkedin?: string;
   member_count?: number;
   president_name?: string;
   president_email?: string;
@@ -28,7 +21,6 @@ export interface ApiClub {
   chapter_is_active?: boolean;
   logo_url?: string;
   cover_image?: string;
-  verified_at?: string | null;
   article_count?: number;
   is_active: boolean;
   campus_ids?: string[];
@@ -44,6 +36,8 @@ export interface ApiClub {
     vice_president_name: string;
     vice_president_email: string;
     vice_president_photo?: string | null;
+    instagram?: string;
+    linkedin?: string;
     chapter_description: string;
     contact_email: string;
     is_active: boolean;

@@ -4,14 +4,14 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Users, Mail, ChevronRight } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { useCampuses } from '@/hooks/useCampuses';
 import { useClubs } from '@/hooks/useClubs';
 import { apiCampusToCampus } from '@/lib/campusUtils';
-import { CLUB_TYPE_FILTER_OPTIONS } from '@/constants/clubBadges';
-import type { ClubType } from '@/types';
 
 export default function Clubs() {
   const params = useParams();
@@ -26,7 +26,7 @@ export default function Clubs() {
   const displayCampus = campus ?? { id: 0, slug: '', name: 'Campus', university: '', city: '—', state: '—', niatSince: new Date().getFullYear(), batchSize: 0, articleCount: 0, rating: null, coverColor: '#991b1b', coverImage: '' };
   const { clubs: apiClubs, loading, error } = useClubs(campusId ? { campus: campusId, is_active: true } : undefined);
 
-  const [typeFilter, setTypeFilter] = useState<ClubType | 'All'>('All');
+  const [query, setQuery] = useState('');
   const [openToAllOnly, setOpenToAllOnly] = useState(false);
 
   const campusClubsCount = useMemo(
@@ -36,10 +36,17 @@ export default function Clubs() {
 
   const filteredClubs = useMemo(() => {
     let list = [...apiClubs];
-    if (typeFilter !== 'All') list = list.filter((c) => c.type === typeFilter);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((c) =>
+        [c.name, c.objective, c.chapter_description, c.president_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q))
+      );
+    }
     if (openToAllOnly) list = list.filter((c) => c.open_to_all);
     return list;
-  }, [apiClubs, typeFilter, openToAllOnly]);
+  }, [apiClubs, query, openToAllOnly]);
 
   const lastUpdatedLabel = useMemo(() => {
     if (apiClubs.length === 0) return 'No updates yet';
@@ -102,21 +109,14 @@ export default function Clubs() {
       >
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            {['All', ...CLUB_TYPE_FILTER_OPTIONS].map((type) => (
-              <button
-                key={type}
-                onClick={() => setTypeFilter(type as ClubType | 'All')}
-                className="text-sm font-medium rounded-full px-4 py-1.5 transition-colors"
-                style={{
-                  fontFamily: 'DM Sans, sans-serif',
-                  ...(typeFilter === type
-                    ? { backgroundColor: '#991b1b', color: 'white' }
-                    : { backgroundColor: '#fbf2f3', color: 'rgba(30,41,59,0.7)' }),
-                }}
-              >
-                {type}
-              </button>
-            ))}
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              suppressHydrationWarning
+              placeholder="Search clubs, objective, lead..."
+              className="min-w-[260px] rounded-lg border border-[rgba(30,41,59,0.15)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]/25"
+            />
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'rgba(30,41,59,0.8)' }}>
             <input
@@ -144,12 +144,12 @@ export default function Clubs() {
           <div className="text-center py-16 px-4">
             <Users className="h-14 w-14 mx-auto text-[rgba(30,41,59,0.3)] mb-4" />
             <p className="text-[#1e293b] font-medium mb-1">
-              No {typeFilter !== 'All' ? typeFilter.toLowerCase() : ''} clubs found at {displayCampus.name}
+              No clubs found at {displayCampus.name}
             </p>
             <div className="flex flex-col gap-2 mt-2">
               <button
                 onClick={() => {
-                  setTypeFilter('All');
+                  setQuery('');
                   setOpenToAllOnly(false);
                 }}
                 className="text-[#991b1b] hover:underline"
@@ -166,18 +166,17 @@ export default function Clubs() {
             {filteredClubs.map((club) => (
               <div key={club.id}>
                 {/* PART 1: Club card — vertical + horizontal split */}
-                <Link
-                  href={`/campus/${campusSlug ?? ''}/clubs/${club.slug}`}
+                <article
                   className="flex flex-col rounded-[14px] overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_32px_rgba(30,41,59,0.14)] bg-white"
                   style={{ boxShadow: '0 4px 20px rgba(30, 41, 59, 0.10)' }}
                 >
-                  <div className="h-40 w-full shrink-0">
+                  <Link href={`/campus/${campusSlug ?? ''}/clubs/${club.slug}`} className="h-40 w-full shrink-0">
                     <ImageWithFallback src={club.cover_image} alt={club.name} loading="lazy" className="w-full h-full object-cover" />
-                  </div>
+                  </Link>
                   <div className="flex flex-col md:flex-row flex-1">
                     {/* Left: maroon */}
                     <div
-                      className="md:w-[30%] md:min-w-[260px] flex flex-col justify-between px-6 py-7"
+                      className="md:w-[32%] md:min-w-[220px] flex flex-col justify-between px-5 py-6"
                       style={{ backgroundColor: '#991b1b' }}
                     >
                       <div>
@@ -189,19 +188,21 @@ export default function Clubs() {
                             borderColor: 'white',
                           }}
                         >
-                          {club.type}
+                          Club
                         </span>
-                        <h2
-                          className="font-display text-[24px] font-bold text-white mt-3"
-                          style={{ fontFamily: 'Playfair Display, serif' }}
-                        >
-                          {club.name}
-                        </h2>
+                        <Link href={`/campus/${campusSlug ?? ''}/clubs/${club.slug}`} className="block">
+                          <h2
+                            className="font-display text-[22px] font-bold text-white mt-3 hover:underline"
+                            style={{ fontFamily: 'Playfair Display, serif' }}
+                          >
+                            {club.name}
+                          </h2>
+                        </Link>
                         <p
                           className="mt-2 text-[13px]"
                           style={{ fontFamily: 'DM Sans, sans-serif', color: 'rgba(255,255,255,0.65)' }}
                         >
-                          Est. {club.founded_year ?? '—'}
+                          {club.president_name ? `Led by ${club.president_name}` : 'Student-led community'}
                         </p>
                       </div>
                       <div className="mt-6">
@@ -249,63 +250,13 @@ export default function Clubs() {
                     </div>
 
                     {/* Right: white content */}
-                    <div className="md:w-[70%] bg-white px-8 py-7">
+                    <div className="md:w-[68%] bg-white px-6 py-6">
                       <p
                         className="text-[15px] text-[#1e293b] leading-[1.7]"
                         style={{ fontFamily: 'DM Sans, sans-serif' }}
                       >
-                        {club.chapter_description || club.about}
+                            {club.chapter_description || club.objective}
                       </p>
-
-                      <div className="border-t border-[rgba(30,41,59,0.08)] my-4" />
-
-                      <div className="mb-3">
-                        <p
-                          className="text-[10px] uppercase tracking-widest text-[rgba(30,41,59,0.6)] mb-1"
-                          style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.08em' }}
-                        >
-                          ACTIVITIES
-                        </p>
-                        <p className="text-[14px] text-[#1e293b]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                          {club.activities}
-                        </p>
-                      </div>
-
-                      {club.achievements && (
-                        <div className="mb-3">
-                          <p
-                            className="text-[10px] uppercase tracking-widest text-[rgba(30,41,59,0.6)] mb-1"
-                            style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.08em' }}
-                          >
-                            ACHIEVEMENT
-                          </p>
-                          <div
-                            className="rounded-lg pl-3 py-2 pr-3 border-l-[3px] border-[#f7b801]"
-                            style={{ backgroundColor: '#fffbeb' }}
-                          >
-                            <p className="text-[14px]" style={{ color: '#f7b801', fontFamily: 'DM Sans, sans-serif' }}>
-                              🏆 {club.achievements}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="mb-4">
-                        <p
-                          className="text-[10px] uppercase tracking-widest text-[rgba(30,41,59,0.6)] mb-1"
-                          style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.08em' }}
-                        >
-                          HOW TO JOIN
-                        </p>
-                        <div
-                          className="rounded-r-lg py-2.5 pl-3 pr-4 border-l-[3px] border-[#991b1b]"
-                          style={{ backgroundColor: '#fbf2f3' }}
-                        >
-                          <p className="text-[14px] text-[#1e293b]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                            {club.how_to_join}
-                          </p>
-                        </div>
-                      </div>
 
                       <div className="flex flex-wrap items-center gap-2.5 mt-4">
                         {club.president_name && (
@@ -326,27 +277,59 @@ export default function Clubs() {
                         )}
                         {club.instagram && (
                           <a
-                            href={instagramUrl(club.instagram)}
+                            href={club.instagram.startsWith('http') ? club.instagram : instagramUrl(club.instagram)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1.5 text-[13px] px-3.5 py-1.5 rounded-lg border border-[#7678ed] text-[#7678ed] hover:bg-[#f3f0ff] transition-colors"
                             style={{ fontFamily: 'DM Sans, sans-serif' }}
                           >
-                            <span aria-hidden>📷</span>
-                            {club.instagram}
+                            <span
+                              style={{
+                                background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+                                borderRadius: '8px',
+                                padding: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faInstagram} style={{ color: 'white' }} className="w-4 h-4" />
+                            </span>
+                            Instagram
+                          </a>
+                        )}
+                        {club.linkedin && (
+                          <a
+                            href={club.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 text-[13px] px-3.5 py-1.5 rounded-lg border border-[#0a66c2] text-[#0a66c2] hover:bg-[#eff6ff] transition-colors"
+                            style={{ fontFamily: 'DM Sans, sans-serif' }}
+                          >
+                            <FontAwesomeIcon icon={faLinkedin} style={{ color: 'rgb(52, 101, 216)' }} className="w-4 h-4" />
+                            LinkedIn
                           </a>
                         )}
                         <span
                           className="ml-auto text-[11px] text-[#15803d]"
                           style={{ fontFamily: 'DM Sans, sans-serif' }}
                         >
-                          {club.chapter_is_active === false ? 'Inactive at this campus' : (club.verified_at ? `✓ Verified ${club.verified_at}` : '✓ Verified')}
+                          {club.chapter_is_active === false ? 'Inactive at this campus' : 'Active Chapter'}
                         </span>
+                      </div>
+                      <div className="mt-4">
+                        <Link
+                          href={`/campus/${campusSlug ?? ''}/clubs/${club.slug}`}
+                          className="inline-flex items-center text-sm font-medium text-[#991b1b] hover:underline"
+                        >
+                          View details →
+                        </Link>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </article>
               </div>
             ))}
           </div>
@@ -373,6 +356,7 @@ export default function Clubs() {
           </div>
           <button
             type="button"
+            suppressHydrationWarning
             className="px-5 py-2.5 bg-[#991b1b] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
             Add a Club →

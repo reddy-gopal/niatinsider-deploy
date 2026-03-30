@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Mail, ChevronRight, Users } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
@@ -11,7 +13,6 @@ import { useCampuses } from '@/hooks/useCampuses';
 import { usePublishedArticles } from '@/hooks/useArticles';
 import { useClubDetail } from '@/hooks/useClubs';
 import { apiCampusToCampus } from '@/lib/campusUtils';
-import { CLUB_TYPE_BADGE_STYLES } from '@/constants/clubBadges';
 import type { Article, ArticlePageArticle } from '@/types';
 import type { ApiArticle } from '@/types/articleApi';
 import { backendCategoryToFrontend } from '@/data/articleCategories';
@@ -105,9 +106,15 @@ export default function ClubDetail() {
     );
   }
 
-  const badge = CLUB_TYPE_BADGE_STYLES[validClub.type];
   const isChapterInactive = validClub.chapter_is_active === false;
   const showLeadership = Boolean(validClub.president_name);
+  const instagramLink = (validClub.instagram || '').trim();
+  const linkedinLinkRaw = (validClub.linkedin || '').trim();
+  const linkedinLink = linkedinLinkRaw
+    ? (linkedinLinkRaw.startsWith('http://') || linkedinLinkRaw.startsWith('https://')
+      ? linkedinLinkRaw
+      : `https://${linkedinLinkRaw}`)
+    : '';
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -146,7 +153,7 @@ export default function ClubDetail() {
             {validClub.name}
           </h1>
           <p className="text-sm text-white/75" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
-            {validClub.type} · Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count ?? 0} members
+            Club Community · ~{validClub.member_count ?? 0} members
           </p>
         </div>
       </section>
@@ -166,12 +173,12 @@ export default function ClubDetail() {
               className="text-[11px] font-semibold rounded-full border"
               style={{
                 padding: '3px 10px',
-                backgroundColor: badge.bg,
-                color: badge.text,
-                borderColor: badge.border,
+                backgroundColor: '#fbf2f3',
+                color: '#991b1b',
+                borderColor: 'rgba(153,27,27,0.25)',
               }}
             >
-              {validClub.type}
+              Club
             </span>
             {validClub.open_to_all ? (
               <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
@@ -188,41 +195,13 @@ export default function ClubDetail() {
             {validClub.objective || validClub.about}
           </p>
           <p className="text-[#334155] mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', lineHeight: 1.6 }}>
-            {validClub.chapter_description || 'No chapter description yet.'}
+            {validClub.chapter_description}
           </p>
 
           <div className="border-t border-[rgba(30,41,59,0.08)] my-4" />
 
-          <div className="mb-2">
-            <p className="text-[11px] uppercase tracking-wider text-[rgba(30,41,59,0.6)] mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-              Activities
-            </p>
-            <p className="text-[13px] text-[#1e293b]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-              {validClub.activities}
-            </p>
-          </div>
-
-          {validClub.achievements && (
-            <div className="mb-2">
-              <p className="text-[11px] text-[rgba(30,41,59,0.6)] mb-0.5">🏆 Achievement</p>
-              <p className="text-[13px]" style={{ color: '#f7b801', fontFamily: 'DM Sans, sans-serif' }}>
-                {validClub.achievements}
-              </p>
-            </div>
-          )}
-
-          <div
-            className="rounded-lg py-2.5 px-3 border-l-[3px] border-[#991b1b] mb-3"
-            style={{ backgroundColor: '#fbf2f3' }}
-          >
-            <p className="text-[11px] font-medium text-[rgba(30,41,59,0.7)] mb-0.5">How to Join</p>
-            <p className="text-[13px] text-[#1e293b]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-              {validClub.how_to_join}
-            </p>
-          </div>
-
           <p className="text-[12px] text-[rgba(30,41,59,0.5)] mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count ?? 0} members
+            ~{validClub.member_count ?? 0} members
           </p>
 
           <div className="flex flex-wrap gap-2 mb-3">
@@ -234,24 +213,48 @@ export default function ClubDetail() {
                 <Mail className="h-3.5 w-3.5" /> Email
               </a>
             ) : null}
-            {validClub.instagram ? (
+            {instagramLink ? (
               <a
-                href={instagramUrl(validClub.instagram)}
+                href={instagramLink.startsWith('http') ? instagramLink : instagramUrl(instagramLink)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm px-3 py-1.5 border rounded-lg transition-colors"
                 style={{ borderColor: '#7678ed', color: '#7678ed' }}
               >
-                📷 Instagram
+                <span
+                  style={{
+                    background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+                    borderRadius: '8px',
+                    padding: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faInstagram} style={{ color: 'white' }} className="w-4 h-4" />
+                </span>
+                Instagram
               </a>
             ) : null}
-            {!validClub.contact_email && !validClub.instagram && (
+            {linkedinLink ? (
+              <a
+                href={linkedinLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm px-3 py-1.5 border rounded-lg transition-colors"
+                style={{ borderColor: '#0a66c2', color: '#0a66c2' }}
+              >
+                <FontAwesomeIcon icon={faLinkedin} style={{ color: 'rgb(52, 101, 216)' }} className="w-4 h-4" />
+                LinkedIn
+              </a>
+            ) : null}
+            {!validClub.contact_email && !instagramLink && !linkedinLink && (
               <p className="text-sm italic text-[rgba(30,41,59,0.5)]">Contact via campus notice board</p>
             )}
           </div>
 
           <p className="text-[11px] text-[#15803d] text-right mt-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            {validClub.verified_at ? `✓ Verified ${validClub.verified_at}` : '✓ Verified'}
+            {isChapterInactive ? 'Inactive at this campus' : '✓ Active chapter'}
           </p>
         </div>
 

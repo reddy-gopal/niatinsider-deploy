@@ -13,7 +13,6 @@ import ImageWithFallback from '@/components/ImageWithFallback';
 import RecentUpdateCard from '@/components/RecentUpdateCard';
 import { CampusStructuredData } from '@/components/CampusStructuredData';
 import { ratings } from '@/data/mockData';
-import { CLUB_TYPE_BADGE_STYLES } from '@/constants/clubBadges';
 import { useCampuses } from '@/hooks/useCampuses';
 import { usePublishedArticles } from '@/hooks/useArticles';
 import { useClubs } from '@/hooks/useClubs';
@@ -84,7 +83,7 @@ export default function Campus() {
   };
   const displayArticleCount = campus ? articleCount : displayCampus.articleCount;
 
-  const [activeSection, setActiveSection] = useState('week1');
+  const [activeSection, setActiveSection] = useState('');
 
   const sectionRefs = {
     week1: useRef<HTMLDivElement>(null),
@@ -96,7 +95,7 @@ export default function Campus() {
     about: useRef<HTMLDivElement>(null),
   };
 
-  const { articles: recentPublishedArticles, loading: recentLoading } = usePublishedArticles(
+  const { articles: recentPublishedArticles } = usePublishedArticles(
     campusId ? { campus: campusId } : undefined,
     { enabled: !!campusId }
   );
@@ -142,6 +141,29 @@ export default function Campus() {
         .slice(0, 6),
     [campusRecentPublishedArticles]
   );
+  const hasWeek1 = thirtyDaysArticles.length > 0;
+  const hasCampusLife = campusLifeVideos.length > 0;
+  const hasClubs = campusClubs.length > 0;
+  const hasFood = foodArticles.length > 0;
+  const hasLiving = livingArticles.length > 0;
+  const hasReviews = displayCampus.rating != null;
+  const hasAbout = Boolean((displayCampus.description || "").trim() || displayCampus.googleMapLink);
+  const navItems = [
+    hasWeek1 ? { id: 'week1', label: '30 days', icon: Calendar } : undefined,
+    hasCampusLife ? { id: 'campusLife', label: 'Campus Life', icon: Play } : undefined,
+    hasClubs ? { id: 'clubs', label: 'Clubs', icon: Users } : undefined,
+    hasFood ? { id: 'food', label: 'Food', icon: Utensils } : undefined,
+    hasLiving ? { id: 'living', label: 'Living', icon: Home } : undefined,
+    hasReviews ? { id: 'reviews', label: 'Reviews', icon: MessageSquare } : undefined,
+    hasAbout ? { id: 'about', label: 'About', icon: Info } : undefined,
+  ].filter((item): item is { id: string; label: string; icon: typeof Calendar } => Boolean(item));
+
+  useEffect(() => {
+    if (navItems.length > 0 && !navItems.some((item) => item.id === activeSection)) {
+      setActiveSection(navItems[0].id);
+    }
+  }, [navItems, activeSection]);
+
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     const ref = sectionRefs[sectionId as keyof typeof sectionRefs];
@@ -154,7 +176,8 @@ export default function Campus() {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 200;
 
-      Object.entries(sectionRefs).forEach(([sectionId, ref]) => {
+      navItems.forEach(({ id: sectionId }) => {
+        const ref = sectionRefs[sectionId as keyof typeof sectionRefs];
         if (ref.current) {
           const { offsetTop, offsetHeight } = ref.current;
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
@@ -166,7 +189,7 @@ export default function Campus() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [navItems]);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -250,18 +273,10 @@ export default function Campus() {
       </section>
 
       {/* Sticky Section Navigation */}
-      <div className="sticky top-[6.5rem] z-40 bg-navbar border-b border-[rgba(30,41,59,0.1)]">
+      {navItems.length > 1 && <div className="sticky top-[6.5rem] z-40 bg-navbar border-b border-[rgba(30,41,59,0.1)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex overflow-x-auto scrollbar-hide gap-1 py-3">
-            {[
-              { id: 'week1', label: '30 days', icon: Calendar },
-              { id: 'campusLife', label: 'Campus Life', icon: Play },
-              { id: 'clubs', label: 'Clubs', icon: Users },
-              { id: 'food', label: 'Food', icon: Utensils },
-              { id: 'living', label: 'Living', icon: Home },
-              { id: 'reviews', label: 'Reviews', icon: MessageSquare },
-              { id: 'about', label: 'About', icon: Info },
-            ].map(({ id, label, icon: Icon }) => (
+            {navItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
@@ -277,11 +292,11 @@ export default function Campus() {
             ))}
           </div>
         </div>
-      </div>
+      </div>}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Section: 30 days at NIAT — global articles, same on all campuses */}
-        <section ref={sectionRefs.week1} className="mb-16">
+        {hasWeek1 && <section ref={sectionRefs.week1} className="mb-16">
           <div className="flex items-center mb-4">
             <Calendar className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -309,10 +324,10 @@ export default function Campus() {
           >
             Know more <ChevronRight className="h-4 w-4" />
           </Link>
-        </section>
+        </section>}
 
         {/* Section: Campus Life — clean, immersive moving video strip */}
-        <section ref={sectionRefs.campusLife} className="mb-16">
+        {hasCampusLife && <section ref={sectionRefs.campusLife} className="mb-16">
           <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#991b1b]/10">
               <Play className="h-5 w-5 text-[#991b1b]" />
@@ -366,10 +381,10 @@ export default function Campus() {
               ))}
             </div>
           </div>
-        </section>
+        </section>}
 
         {/* Section: Clubs */}
-        <section ref={sectionRefs.clubs} className="mb-16">
+        {hasClubs && <section ref={sectionRefs.clubs} className="mb-16">
           <div className="flex items-center mb-4">
             <Users className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -384,21 +399,10 @@ export default function Campus() {
 
           {(() => {
             const previewClubs = campusClubs.slice(0, 3);
-            if (campusClubs.length === 0) {
-              return (
-                <>
-                  <p className="text-black mb-2">No clubs listed yet for this campus.</p>
-                  <Link href={`/campus/${slugForLinks}/clubs`} className="text-[#991b1b] hover:underline">
-                    → View clubs directory
-                  </Link>
-                </>
-              );
-            }
             return (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {previewClubs.map((club) => {
-                    const badge = CLUB_TYPE_BADGE_STYLES[club.type];
                     return (
                       <Link
                         key={club.id}
@@ -417,12 +421,12 @@ export default function Campus() {
                               className="text-[11px] font-semibold rounded-full border"
                               style={{
                                 padding: '3px 10px',
-                                backgroundColor: badge.bg,
-                                color: badge.text,
-                                borderColor: badge.border,
+                                backgroundColor: '#fbf2f3',
+                                color: '#991b1b',
+                                borderColor: 'rgba(153,27,27,0.25)',
                               }}
                             >
-                              {club.type}
+                              Club
                             </span>
                             {club.open_to_all ? (
                               <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
@@ -441,13 +445,13 @@ export default function Campus() {
                             className="text-[13px] text-[rgba(30,41,59,0.7)] mb-3 line-clamp-2"
                             style={{ fontFamily: 'DM Sans, sans-serif' }}
                           >
-                            {club.about}
+                            {club.chapter_description || club.objective}
                           </p>
                           <p
                             className="text-[12px] text-[rgba(30,41,59,0.5)] mb-2"
                             style={{ fontFamily: 'DM Sans, sans-serif' }}
                           >
-                            Since {club.founded_year ?? '—'} · ~{club.member_count} members
+                            ~{club.member_count ?? 0} members
                           </p>
                           <span className="text-[#991b1b] text-sm font-medium hover:underline">
                             View details →
@@ -466,10 +470,10 @@ export default function Campus() {
               </>
             );
           })()}
-        </section>
+        </section>}
 
         {/* Section: Food */}
-        <section ref={sectionRefs.food} className="mb-16">
+        {hasFood && <section ref={sectionRefs.food} className="mb-16">
           <div className="flex items-center mb-4">
             <Utensils className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -477,40 +481,36 @@ export default function Campus() {
             </h2>
           </div>
           <p className="text-black mb-6">Where to eat at and around {displayCampus.name}</p>
-          {foodArticles.length === 0 ? (
-            <p className="text-black mb-4">No food articles yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {foodArticles.map((article) => (
-                <Link
-                  key={article.id}
-                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
-                  className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
-                >
-                  {article.coverImage && (
-                    <div className="h-32 w-full overflow-hidden">
-                      <ImageWithFallback src={article.coverImage} alt={article.title} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">{article.title}</h3>
-                    <p className="text-sm text-[#64748b] line-clamp-2 mb-2">{article.excerpt}</p>
-                    <span className="text-xs text-[#94a3b8]">👍 {article.upvoteCount} upvotes</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {foodArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
+                className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
+              >
+                {article.coverImage && (
+                  <div className="h-32 w-full overflow-hidden">
+                    <ImageWithFallback src={article.coverImage} alt={article.title} loading="lazy" className="w-full h-full object-cover" />
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                )}
+                <div className="p-4">
+                  <h3 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">{article.title}</h3>
+                  <p className="text-sm text-[#64748b] line-clamp-2 mb-2">{article.excerpt}</p>
+                  <span className="text-xs text-[#94a3b8]">👍 {article.upvoteCount} upvotes</span>
+                </div>
+              </Link>
+            ))}
+          </div>
           <Link
             href={`/articles${slugForLinks ? `?campus=${slugForLinks}` : ''}`}
             className="inline-flex items-center gap-1.5 text-[#991b1b] font-medium text-sm hover:underline"
           >
             Know more <ChevronRight className="h-4 w-4" />
           </Link>
-        </section>
+        </section>}
 
         {/* Section: Living */}
-        <section ref={sectionRefs.living} className="mb-16">
+        {hasLiving && <section ref={sectionRefs.living} className="mb-16">
           <div className="flex items-center mb-4">
             <Home className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -518,40 +518,36 @@ export default function Campus() {
             </h2>
           </div>
           <p className="text-black mb-6">Hostel, PG, and accommodation near {displayCampus.name}</p>
-          {livingArticles.length === 0 ? (
-            <p className="text-black mb-4">No living articles yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {livingArticles.map((article) => (
-                <Link
-                  key={article.id}
-                  href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
-                  className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
-                >
-                  {article.coverImage && (
-                    <div className="h-32 w-full overflow-hidden">
-                      <ImageWithFallback src={article.coverImage} alt={article.title} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">{article.title}</h3>
-                    <p className="text-sm text-[#64748b] line-clamp-2 mb-2">{article.excerpt}</p>
-                    <span className="text-xs text-[#94a3b8]">👍 {article.upvoteCount} upvotes</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {livingArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={article.campusId ? `/campus/${slugForCampusId(article.campusId)}/article/${article.slug}` : `/article/${article.slug}`}
+                className="block bg-white rounded-xl shadow-card overflow-hidden border border-transparent hover:border-[#991b1b]/30 transition-colors"
+              >
+                {article.coverImage && (
+                  <div className="h-32 w-full overflow-hidden">
+                    <ImageWithFallback src={article.coverImage} alt={article.title} loading="lazy" className="w-full h-full object-cover" />
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                )}
+                <div className="p-4">
+                  <h3 className="font-display font-medium text-[#1e293b] mb-1 line-clamp-2">{article.title}</h3>
+                  <p className="text-sm text-[#64748b] line-clamp-2 mb-2">{article.excerpt}</p>
+                  <span className="text-xs text-[#94a3b8]">👍 {article.upvoteCount} upvotes</span>
+                </div>
+              </Link>
+            ))}
+          </div>
           <Link
             href={`/articles${slugForLinks ? `?campus=${slugForLinks}` : ''}`}
             className="inline-flex items-center gap-1.5 text-[#991b1b] font-medium text-sm hover:underline"
           >
             Know more <ChevronRight className="h-4 w-4" />
           </Link>
-        </section>
+        </section>}
 
         {/* Section: Student Ratings & Reviews */}
-        <section ref={sectionRefs.reviews} className="mb-16">
+        {hasReviews && <section ref={sectionRefs.reviews} className="mb-16">
           <div className="flex items-center mb-4">
             <MessageSquare className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -593,10 +589,10 @@ export default function Campus() {
               All reviews are anonymous and verified by Campus Ambassador
             </p>
           </div>
-        </section>
+        </section>}
 
         {/* Section: About */}
-        <section ref={sectionRefs.about} className="mb-16">
+        {hasAbout && <section ref={sectionRefs.about} className="mb-16">
           <div className="flex items-center mb-4">
             <Info className="h-6 w-6 text-[#991b1b] mr-3" />
             <h2 className="font-display text-2xl font-bold text-black">
@@ -609,9 +605,7 @@ export default function Campus() {
               About {displayCampus.name}
             </p>
             <p className="text-black leading-relaxed mb-6">
-              {displayCampus.description?.trim()
-                ? displayCampus.description
-                : `More campus information for ${displayCampus.name} will be added soon.`}
+              {displayCampus.description}
             </p>
 
             {displayCampus.googleMapLink ? (
@@ -624,13 +618,9 @@ export default function Campus() {
                 Get a Direction
                 <ExternalLink className="h-4 w-4" />
               </a>
-            ) : (
-              <p className="text-sm text-[#64748b]">
-                Direction link is not available yet for this campus.
-              </p>
-            )}
+            ) : null}
           </div>
-        </section>
+        </section>}
 
       </div>
 
