@@ -72,6 +72,7 @@ src/
 ## 🌐 Deployment
 
 The application is optimized for deployment on the [Vercel Platform](https://vercel.com).
+For additional setup guidance, see the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
 
 ---
 *Built with ❤️ for the NIAT community.*
