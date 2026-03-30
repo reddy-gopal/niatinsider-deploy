@@ -37,17 +37,18 @@ export function useClubs(params?: Record<string, string | number | boolean>) {
   return { clubs, loading, error, refetch };
 }
 
-export function useClubDetail(id: string | number | null) {
+export function useClubDetail(idOrSlug: string | number | null, params?: Record<string, string | number | boolean>) {
   const [club, setClub] = useState<ApiClub | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const paramsKey = JSON.stringify(params ?? {});
 
   const refetch = useCallback(() => {
-    if (id == null || id === '') return;
+    if (idOrSlug == null || idOrSlug === '') return;
     setLoading(true);
     setError(null);
     clubService
-      .detail(id)
+      .detail(idOrSlug, params)
       .then((res: DetailResponse) => setClub(res.data))
       .catch((e: unknown) => {
         const err = e as { response?: { data?: { detail?: string } }; message?: string };
@@ -55,16 +56,16 @@ export function useClubDetail(id: string | number | null) {
         setClub(null);
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [idOrSlug, paramsKey]);
 
   useEffect(() => {
-    if (id == null || id === '') {
+    if (idOrSlug == null || idOrSlug === '') {
       setClub(null);
       setLoading(false);
       return;
     }
     refetch();
-  }, [id, refetch]);
+  }, [idOrSlug, refetch]);
 
   return { club, loading, error, refetch };
 }

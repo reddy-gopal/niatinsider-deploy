@@ -198,6 +198,10 @@ export default function Article() {
   const relatedCtaLabel = fromApi && apiArticle?.campus_name
     ? `See all ${apiArticle.campus_name} articles \u2192`
     : 'See all articles \u2192';
+  const clubProfileHref =
+    fromApi && apiArticle?.category === 'club-directory' && apiArticle?.subcategory && campusSlug
+      ? `/campus/${campusSlug}/clubs/${apiArticle.subcategory}`
+      : null;
 
   useEffect(() => {
     fetchMe().then((me) => setCurrentUsername(me?.username ?? null));
@@ -476,6 +480,11 @@ export default function Article() {
                 LinkedIn
               </a>
             )}
+                {clubProfileHref && (
+                  <Link href={clubProfileHref} className="text-[#991b1b] hover:underline">
+                    Published by {apiArticle?.subcategory?.replace(/-/g, ' ')}
+                  </Link>
+                )}
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <span className="flex items-center">

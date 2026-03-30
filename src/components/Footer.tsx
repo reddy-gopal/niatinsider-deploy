@@ -70,6 +70,7 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About</Link>
               <Link href="/campuses" className="text-white/60 hover:text-white text-sm transition-colors">Campuses</Link>
               <Link href="/articles" className="text-white/60 hover:text-white text-sm transition-colors">Articles</Link>
+              <Link href="/leaderboard" className="text-white/60 hover:text-white text-sm transition-colors">Leaderboard</Link>
               <a href="/talk-to-seniors" className="text-white/60 hover:text-white text-sm transition-colors">Talk To Seniors</a>
               <Link href={HOW_TO_GUIDES_URL} className="text-white/60 hover:text-white text-sm transition-colors">How-to Guides</Link>
             </div>

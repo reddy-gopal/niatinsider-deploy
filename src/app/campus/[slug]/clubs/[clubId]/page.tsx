@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Mail, ChevronRight } from 'lucide-react';
+import { Mail, ChevronRight, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
@@ -12,9 +12,10 @@ import { usePublishedArticles } from '@/hooks/useArticles';
 import { useClubDetail } from '@/hooks/useClubs';
 import { apiCampusToCampus } from '@/lib/campusUtils';
 import { CLUB_TYPE_BADGE_STYLES } from '@/constants/clubBadges';
-import type { ArticlePageArticle } from '@/types';
+import type { Article, ArticlePageArticle } from '@/types';
 import type { ApiArticle } from '@/types/articleApi';
 import { backendCategoryToFrontend } from '@/data/articleCategories';
+import ArticleCard from '@/components/ArticleCard';
 
 function apiArticleToPageArticle(a: ApiArticle): ArticlePageArticle {
   return {
@@ -31,34 +32,10 @@ function apiArticleToPageArticle(a: ApiArticle): ArticlePageArticle {
   };
 }
 
-function articleTypeBadge(category: ArticlePageArticle['category']): { label: string; bg: string; text: string } {
-  switch (category) {
-    case 'experiences':
-      return { label: 'By member', bg: '#fff7ed', text: '#f18701' };
-    case 'campus-life':
-      return { label: 'Event recap', bg: '#f3f0ff', text: '#7678ed' };
-    case 'howto':
-      return { label: 'Guide', bg: '#f0f9ff', text: '#0369a1' };
-    default:
-      return { label: 'Article', bg: '#f1f5f9', text: '#64748b' };
-  }
-}
-
-function categoryLabel(category: ArticlePageArticle['category']): string {
-  const labels: Record<ArticlePageArticle['category'], string> = {
-    'campus-life': 'Campus Life',
-    experiences: 'Experiences',
-    academics: 'Academics',
-    howto: 'How-To',
-  };
-  return labels[category] ?? category;
-}
-
 export default function ClubDetail() {
   const params = useParams();
   const campusSlug = params.slug as string;
-  const clubIdParam = params.clubId as string;
-  const clubId = clubIdParam ? parseInt(clubIdParam, 10) : NaN;
+  const clubSlug = params.clubId as string;
   const { campuses: apiCampuses } = useCampuses();
   const campus = useMemo(() => {
     if (!campusSlug || !apiCampuses.length) return null;
@@ -67,10 +44,9 @@ export default function ClubDetail() {
   }, [apiCampuses, campusSlug]);
   const campusId = campus?.id != null ? String(campus.id) : '';
   const displayCampus = campus ?? { id: 0, slug: '', name: 'Campus', university: '', city: '—', state: '—', niatSince: new Date().getFullYear(), batchSize: 0, articleCount: 0, rating: null, coverColor: '#991b1b', coverImage: '' };
-  const { club } = useClubDetail(Number.isFinite(clubId) ? clubId : null);
-  const validClub = club && String(club.campus_id) === campusId ? club : null;
+  const { club: validClub, loading: clubLoading } = useClubDetail(clubSlug || null, campusId ? { campus: campusId } : undefined);
 
-  const { articles: apiArticles } = usePublishedArticles(
+  const { articles: apiArticles, loading: articlesLoading, next, loadMore, loadingMore } = usePublishedArticles(
     campusId && validClub
       ? { campus: campusId, category: 'club-directory', subcategory: validClub.slug }
       : undefined,
@@ -82,11 +58,37 @@ export default function ClubDetail() {
       .map(apiArticleToPageArticle)
       .sort((a, b) => b.upvoteCount - a.upvoteCount);
   }, [apiArticles, validClub]);
+  const cardArticles = useMemo<Article[]>(() => (
+    clubArticles.map((a) => ({
+      id: Number(a.id),
+      slug: a.slug,
+      campusId: a.campusId ?? '',
+      section: a.category,
+      title: a.title,
+      excerpt: a.excerpt,
+      author: 'NIAT Insider',
+      updatedDays: a.updatedDays,
+      upvoteCount: a.upvoteCount,
+      coverImage: a.coverImage,
+    }))
+  ), [clubArticles]);
 
   const instagramUrl = (handle: string) => {
     const clean = handle.replace('@', '');
     return `https://instagram.com/${clean}`;
   };
+
+  if (clubLoading) {
+    return (
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center text-[#64748b]">
+          Loading club...
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!validClub) {
     return (
@@ -104,6 +106,8 @@ export default function ClubDetail() {
   }
 
   const badge = CLUB_TYPE_BADGE_STYLES[validClub.type];
+  const isChapterInactive = validClub.chapter_is_active === false;
+  const showLeadership = Boolean(validClub.president_name);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -142,12 +146,17 @@ export default function ClubDetail() {
             {validClub.name}
           </h1>
           <p className="text-sm text-white/75" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
-            {validClub.type} · Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count} members
+            {validClub.type} · Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count ?? 0} members
           </p>
         </div>
       </section>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isChapterInactive && (
+          <div className="mb-4 p-4 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm">
+            This club chapter is currently inactive at this campus.
+          </div>
+        )}
         <div
           className="bg-white rounded-[14px] p-6 border border-[rgba(30,41,59,0.1)]"
           style={{ boxShadow: '0 4px 12px rgba(30, 41, 59, 0.08)' }}
@@ -176,7 +185,10 @@ export default function ClubDetail() {
           </div>
 
           <p className="text-[#1e293b] mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', lineHeight: 1.6 }}>
-            {validClub.about}
+            {validClub.objective || validClub.about}
+          </p>
+          <p className="text-[#334155] mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', lineHeight: 1.6 }}>
+            {validClub.chapter_description || 'No chapter description yet.'}
           </p>
 
           <div className="border-t border-[rgba(30,41,59,0.08)] my-4" />
@@ -210,13 +222,13 @@ export default function ClubDetail() {
           </div>
 
           <p className="text-[12px] text-[rgba(30,41,59,0.5)] mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count} members
+            Est. {validClub.founded_year ?? '—'} · ~{validClub.member_count ?? 0} members
           </p>
 
           <div className="flex flex-wrap gap-2 mb-3">
-            {validClub.email ? (
+            {validClub.contact_email ? (
               <a
-                href={`mailto:${validClub.email}`}
+                href={`mailto:${validClub.contact_email}`}
                 className="inline-flex items-center gap-1 text-sm px-3 py-1.5 border border-[#991b1b] text-[#991b1b] rounded-lg hover:bg-[#991b1b] hover:text-white transition-colors"
               >
                 <Mail className="h-3.5 w-3.5" /> Email
@@ -233,7 +245,7 @@ export default function ClubDetail() {
                 📷 Instagram
               </a>
             ) : null}
-            {!validClub.email && !validClub.instagram && (
+            {!validClub.contact_email && !validClub.instagram && (
               <p className="text-sm italic text-[rgba(30,41,59,0.5)]">Contact via campus notice board</p>
             )}
           </div>
@@ -243,6 +255,46 @@ export default function ClubDetail() {
           </p>
         </div>
 
+        {showLeadership && (
+          <section className="mt-8">
+            <h2 className="font-display text-xl font-semibold text-[#1e293b] mb-4">Leadership</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-4">
+                <div className="flex items-center gap-3">
+                  {validClub.president_photo ? (
+                    <img src={validClub.president_photo} alt={validClub.president_name || 'President'} className="h-12 w-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-[#f1f5f9] flex items-center justify-center"><Users className="h-5 w-5 text-[#64748b]" /></div>
+                  )}
+                  <div>
+                    <p className="text-sm text-[#64748b]">President</p>
+                    <p className="font-medium text-[#1e293b]">{validClub.president_name || '—'}</p>
+                  </div>
+                </div>
+                {validClub.president_email && (
+                  <a href={`mailto:${validClub.president_email}`} className="mt-3 inline-flex text-sm text-[#991b1b] hover:underline">{validClub.president_email}</a>
+                )}
+              </div>
+              <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-4">
+                <div className="flex items-center gap-3">
+                  {validClub.vice_president_photo ? (
+                    <img src={validClub.vice_president_photo} alt={validClub.vice_president_name || 'Vice President'} className="h-12 w-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-[#f1f5f9] flex items-center justify-center"><Users className="h-5 w-5 text-[#64748b]" /></div>
+                  )}
+                  <div>
+                    <p className="text-sm text-[#64748b]">Vice President</p>
+                    <p className="font-medium text-[#1e293b]">{validClub.vice_president_name || '—'}</p>
+                  </div>
+                </div>
+                {validClub.vice_president_email && (
+                  <a href={`mailto:${validClub.vice_president_email}`} className="mt-3 inline-flex text-sm text-[#991b1b] hover:underline">{validClub.vice_president_email}</a>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         <Link
           href={`/campus/${campusSlug ?? ''}/clubs`}
           className="inline-block mt-6 text-[#991b1b] hover:underline"
@@ -251,56 +303,37 @@ export default function ClubDetail() {
           ← Back to all {displayCampus.name} clubs
         </Link>
 
-        {/* Articles related to this club — section below club summary */}
-        {clubArticles.length > 0 && (
-          <section className="mt-12">
+        <section className="mt-12">
             <h2
               className="font-display text-xl font-semibold text-[#1e293b] mb-4"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
-              Articles related to this Club
+              Articles by {validClub.name}
             </h2>
-            <div className="border-t border-[rgba(30,41,59,0.08)] pt-4 space-y-8">
-              {clubArticles.map((article) => {
-                const typeBadge = articleTypeBadge(article.category);
-                return (
-                  <Link
-                    key={article.id}
-                    href={`/campus/${campusSlug ?? ''}/article/${article.slug}`}
-                    className="block p-4 rounded-xl border border-[rgba(30,41,59,0.08)] hover:bg-[#fbf2f3] hover:border-[rgba(153,27,27,0.2)] transition-colors"
-                  >
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <span
-                        className="text-[11px] font-medium rounded-full px-2 py-0.5"
-                        style={{ backgroundColor: 'rgba(30,41,59,0.08)', color: '#1e293b' }}
-                      >
-                        {categoryLabel(article.category)}
-                      </span>
-                      <span
-                        className="text-[11px] font-medium rounded-full px-2 py-0.5 border border-current"
-                        style={{ backgroundColor: typeBadge.bg, color: typeBadge.text }}
-                      >
-                        {typeBadge.label}
-                      </span>
-                    </div>
-                    <h3 className="text-[15px] font-bold text-[#1e293b] hover:text-[#991b1b] mb-1.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                      {article.title}
-                    </h3>
-                    <p
-                      className="text-[13px] text-[rgba(30,41,59,0.65)] leading-relaxed mb-2"
-                      style={{ fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}
-                    >
-                      {article.excerpt}
-                    </p>
-                    <p className="text-[11px] text-[rgba(30,41,59,0.5)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                      👍 {article.upvoteCount} upvotes · Updated {article.updatedDays} days ago
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
+            {articlesLoading ? (
+              <div className="py-8 text-[#64748b]">Loading articles...</div>
+            ) : cardArticles.length === 0 ? (
+              <p className="text-[#64748b]">No articles published by this club yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cardArticles.map((a) => (
+                  <ArticleCard key={`${a.id}`} article={a} campusSlug={campusSlug} />
+                ))}
+              </div>
+            )}
+            {next && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-4 py-2 rounded-lg border border-[#991b1b] text-[#991b1b] hover:bg-[#fbf2f3] disabled:opacity-60"
+                >
+                  {loadingMore ? 'Loading...' : 'Load more'}
+                </button>
+              </div>
+            )}
           </section>
-        )}
       </div>
 
       <Footer />

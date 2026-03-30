@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { useCampuses } from '@/hooks/useCampuses';
+import { useClubs } from '@/hooks/useClubs';
 import { articleService, type ApiCategory } from '@/lib/articleService';
 import { fetchFoundingEditorProfile, fetchMe } from '@/lib/authApi';
 const STYLE_OPTIONS = [
@@ -115,6 +116,7 @@ function ToolbarDivider() {
 }
 
 function WriteArticleClientContent() {
+  const [isMounted, setIsMounted] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -144,6 +146,13 @@ function WriteArticleClientContent() {
   type ToastItem = { id: number; message: string; type: 'validation' | 'error' };
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const { campuses: apiCampuses } = useCampuses();
+  const selectedCategory = categories.find((c: ApiCategory) => c.id === categoryId);
+  const isClubDirectory = selectedCategory?.slug === 'club-directory';
+  const { clubs, loading: clubsLoading } = useClubs(
+    isClubDirectory && campusId
+      ? { campus: campusId }
+      : undefined
+  );
   const submittedCampusSlug =
     submittedCampusId != null
       ? (apiCampuses.find((c) => String(c.id) === String(submittedCampusId))?.slug ?? String(submittedCampusId))
@@ -178,6 +187,10 @@ function WriteArticleClientContent() {
   const searchParams = useSearchParams();
   const editParam = searchParams.get('edit');
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   /** Reset form for a new article and navigate to write (no edit param). Closes success modal. */
   const startWriteAnotherArticle = useCallback(() => {
@@ -409,12 +422,11 @@ function WriteArticleClientContent() {
     return () => document.removeEventListener('selectionchange', handleSelectionChange);
   }, []);
 
-  const selectedCategory = categories.find((c: ApiCategory) => c.id === categoryId);
   const selectedCategoryName = selectedCategory?.name ?? '';
-  const needsSubcategory = subcategoryOptions.length > 0;
-  const subcategoryLabel = 'Subcategory';
-  const selectedSubcategoryOption = subcategoryOptions.find((o) => o.value === subcategory);
-  const showSubcategoryOther = selectedSubcategoryOption?.requires_other ?? false;
+  const needsSubcategory = isClubDirectory ? true : subcategoryOptions.length > 0;
+  const subcategoryLabel = isClubDirectory ? 'Club' : 'Subcategory';
+  const selectedSubcategoryOption = isClubDirectory ? undefined : subcategoryOptions.find((o) => o.value === subcategory);
+  const showSubcategoryOther = isClubDirectory ? false : (selectedSubcategoryOption?.requires_other ?? false);
   const othersPlaceholder = 'e.g. specify name';
 
   const handleSubmit = async () => {
@@ -422,9 +434,13 @@ function WriteArticleClientContent() {
     if (!title.trim()) errors.title = true;
     if (categoryId == null) errors.section = true;
     if (needsSubcategory) {
-      if (!subcategory.trim()) errors.subcategory = true;
-      const sel = subcategoryOptions.find((o) => o.value === subcategory);
-      if (sel?.requires_other && !subcategoryOther.trim()) errors.subcategoryOther = true;
+      if (isClubDirectory && !campusId.trim()) {
+        errors.subcategory = true;
+      } else {
+        if (!subcategory.trim()) errors.subcategory = true;
+        const sel = subcategoryOptions.find((o) => o.value === subcategory);
+        if (sel?.requires_other && !subcategoryOther.trim()) errors.subcategoryOther = true;
+      }
     }
     const bodyContent = getBodyHtmlForSave(bodyRef.current);
     const bodyTextLength = getBodyTextLength(bodyContent);
@@ -435,7 +451,10 @@ function WriteArticleClientContent() {
       if (errors.title) addToast('Please add a title.', 'validation');
       if (errors.section) addToast('Please select a section.', 'validation');
       if (errors.body) addToast('Body should be at least 100 characters.', 'validation');
-      if (errors.subcategory) addToast(`Please select a ${subcategoryLabel.toLowerCase()}.`, 'validation');
+      if (errors.subcategory) {
+        if (isClubDirectory && !campusId.trim()) addToast('Complete your campus profile to select a club.', 'validation');
+        else addToast(`Please select a ${subcategoryLabel.toLowerCase()}.`, 'validation');
+      }
       if (errors.subcategoryOther) addToast(`Please specify the ${subcategoryLabel.toLowerCase()} name.`, 'validation');
       if (errors.campus) addToast('Please select a campus.', 'validation');
       return;
@@ -589,6 +608,11 @@ function WriteArticleClientContent() {
       )
       .join('');
   }, []);
+
+  // Some browser extensions inject attributes (e.g. fdprocessedid) before hydration,
+  // causing unavoidable server/client mismatches on dense form UIs.
+  // Keep this guard after all hooks so hook order remains stable.
+  if (!isMounted) return null;
 
   return (
     <div className="write-article-page min-h-screen bg-white overflow-x-hidden font-sans">
@@ -849,19 +873,47 @@ function WriteArticleClientContent() {
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     setSubcategory(e.target.value);
                     if (validationErrors.subcategory) setValidationErrors((prev) => ({ ...prev, subcategory: false }));
-                    if (!subcategoryOptions.find((o) => o.value === e.target.value)?.requires_other) setSubcategoryOther('');
+                    if (!isClubDirectory && !subcategoryOptions.find((o) => o.value === e.target.value)?.requires_other) setSubcategoryOther('');
                   }}
+                  disabled={isClubDirectory && (!campusId.trim() || clubsLoading || clubs.length === 0)}
                   className={`w-full px-[14px] py-2 rounded-lg text-[13px] bg-[#fbf2f3] border transition-colors ${validationErrors.subcategory ? 'border-[#991b1b]' : 'border-[rgba(30,41,59,0.15)] hover:border-[#991b1b]'
                     }`}
                   style={{ color: '#1e293b' }}
                 >
-                  <option value="">Select {subcategoryLabel.toLowerCase()}</option>
-                  {subcategoryOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
+                  {isClubDirectory ? (
+                    <>
+                      {!campusId.trim() ? (
+                        <option value="">Complete your campus profile to select a club</option>
+                      ) : clubsLoading ? (
+                        <option value="">Loading clubs...</option>
+                      ) : clubs.length === 0 ? (
+                        <option value="">No clubs found for your campus</option>
+                      ) : (
+                        <option value="">Select club</option>
+                      )}
+                      {clubs.map((club) => (
+                        <option key={club.id} value={club.slug}>
+                          {club.name}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <option value="">Select {subcategoryLabel.toLowerCase()}</option>
+                      {subcategoryOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
+                {isClubDirectory && !campusId.trim() && (
+                  <p className="mt-1 text-xs text-[#991b1b]">Complete your campus profile to select a club</p>
+                )}
+                {isClubDirectory && campusId.trim() && !clubsLoading && clubs.length === 0 && (
+                  <p className="mt-1 text-xs text-[#64748b]">No clubs found for your campus</p>
+                )}
                 {validationErrors.subcategory && (
                   <p className="mt-1 text-xs text-[#991b1b]">Please select a {subcategoryLabel.toLowerCase()}.</p>
                 )}

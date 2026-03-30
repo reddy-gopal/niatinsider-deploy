@@ -24,7 +24,7 @@ export default function Clubs() {
   }, [apiCampuses, campusSlug]);
   const campusId = campus?.id != null ? String(campus.id) : '';
   const displayCampus = campus ?? { id: 0, slug: '', name: 'Campus', university: '', city: '—', state: '—', niatSince: new Date().getFullYear(), batchSize: 0, articleCount: 0, rating: null, coverColor: '#991b1b', coverImage: '' };
-  const { clubs: apiClubs, loading, error } = useClubs(campusId ? { campus: campusId } : undefined);
+  const { clubs: apiClubs, loading, error } = useClubs(campusId ? { campus: campusId, is_active: true } : undefined);
 
   const [typeFilter, setTypeFilter] = useState<ClubType | 'All'>('All');
   const [openToAllOnly, setOpenToAllOnly] = useState(false);
@@ -167,7 +167,7 @@ export default function Clubs() {
               <div key={club.id}>
                 {/* PART 1: Club card — vertical + horizontal split */}
                 <Link
-                  href={`/campus/${campusSlug ?? ''}/clubs/${club.id}`}
+                  href={`/campus/${campusSlug ?? ''}/clubs/${club.slug}`}
                   className="flex flex-col rounded-[14px] overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_32px_rgba(30,41,59,0.14)] bg-white"
                   style={{ boxShadow: '0 4px 20px rgba(30, 41, 59, 0.10)' }}
                 >
@@ -205,7 +205,18 @@ export default function Clubs() {
                         </p>
                       </div>
                       <div className="mt-6">
-                        {club.open_to_all ? (
+                        {club.chapter_is_active === false ? (
+                          <span
+                            className="inline-block text-[12px] font-medium rounded-full px-3 py-1 border"
+                            style={{
+                              color: '#fca5a5',
+                              backgroundColor: 'rgba(127,29,29,0.3)',
+                              borderColor: 'rgba(252,165,165,0.7)',
+                            }}
+                          >
+                            Inactive Chapter
+                          </span>
+                        ) : club.open_to_all ? (
                           <span
                             className="inline-block text-[12px] font-medium rounded-full px-3 py-1 border"
                             style={{
@@ -232,7 +243,7 @@ export default function Clubs() {
                           className="mt-2 text-[12px]"
                           style={{ fontFamily: 'DM Sans, sans-serif', color: 'rgba(255,255,255,0.6)' }}
                         >
-                          ~{club.member_count} members
+                          ~{club.member_count ?? 0} members
                         </p>
                       </div>
                     </div>
@@ -243,7 +254,7 @@ export default function Clubs() {
                         className="text-[15px] text-[#1e293b] leading-[1.7]"
                         style={{ fontFamily: 'DM Sans, sans-serif' }}
                       >
-                        {club.about}
+                        {club.chapter_description || club.about}
                       </p>
 
                       <div className="border-t border-[rgba(30,41,59,0.08)] my-4" />
@@ -297,9 +308,14 @@ export default function Clubs() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2.5 mt-4">
-                        {club.email && (
+                        {club.president_name && (
+                          <span className="text-[13px] text-[rgba(30,41,59,0.7)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                            Led by {club.president_name}
+                          </span>
+                        )}
+                        {club.contact_email && (
                           <a
-                            href={`mailto:${club.email}`}
+                            href={`mailto:${club.contact_email}`}
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1.5 text-[13px] px-3.5 py-1.5 rounded-lg border border-[#991b1b] text-[#991b1b] hover:bg-[#fbf2f3] transition-colors"
                             style={{ fontFamily: 'DM Sans, sans-serif' }}
@@ -325,7 +341,7 @@ export default function Clubs() {
                           className="ml-auto text-[11px] text-[#15803d]"
                           style={{ fontFamily: 'DM Sans, sans-serif' }}
                         >
-                          {club.verified_at ? `✓ Verified ${club.verified_at}` : '✓ Verified'}
+                          {club.chapter_is_active === false ? 'Inactive at this campus' : (club.verified_at ? `✓ Verified ${club.verified_at}` : '✓ Verified')}
                         </span>
                       </div>
                     </div>

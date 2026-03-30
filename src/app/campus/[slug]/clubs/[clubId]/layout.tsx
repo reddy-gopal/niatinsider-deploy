@@ -3,9 +3,12 @@ import { API_BASE } from '../../../../../lib/apiBase'
 interface Props { params: Promise<{ slug: string; clubId: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, clubId } = await params
+  const campusRes = await fetch(`${API_BASE}/api/campuses/${slug}/`, { next: { revalidate: 3600 } })
+  const campus = campusRes.ok ? await campusRes.json() : null
+  const campusId = campus?.id
   try {
     const res = await fetch(
-      `${API_BASE}/api/clubs/${clubId}/`,
+      `${API_BASE}/api/articles/clubs/${clubId}/${campusId ? `?campus=${campusId}` : ''}`,
       { next: { revalidate: 3600 } }
     )
     if (!res.ok) throw new Error()

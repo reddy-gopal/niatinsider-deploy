@@ -11,7 +11,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import RecentUpdateCard from '@/components/RecentUpdateCard';
-import CampusLeaderboard from '@/components/CampusLeaderboard';
 import { CampusStructuredData } from '@/components/CampusStructuredData';
 import { ratings } from '@/data/mockData';
 import { CLUB_TYPE_BADGE_STYLES } from '@/constants/clubBadges';
@@ -217,7 +216,7 @@ export default function Campus() {
             <p className="text-white/80 text-lg mb-4">{displayCampus.university || displayCampus.name}</p>
           )}
           {/* Stats Row — real-time article count */}
-          <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm">
+          <div className="hidden md:flex flex-wrap items-center gap-4 text-white/80 text-sm">
             <span className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
               {displayCampus.city}, {displayCampus.state}
@@ -241,7 +240,7 @@ export default function Campus() {
           </div>
 
           {/* Last updated badge */}
-          <div className="mt-4">
+          <div className="mt-4 hidden md:block">
             <span className="inline-flex items-center bg-white/20 text-white text-xs px-3 py-1 rounded-full">
               <Clock className="h-3 w-3 mr-1" />
               Last updated 3 days ago
@@ -266,6 +265,7 @@ export default function Campus() {
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
+                suppressHydrationWarning
                 className={`flex items-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activeSection === id
                   ? 'text-[#991b1b] border-b-2 border-[#991b1b]'
                   : 'text-black hover:text-black'
@@ -280,8 +280,6 @@ export default function Campus() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <CampusLeaderboard campusSlug={campusSlug} className="mb-16" />
-
         {/* Section: 30 days at NIAT — global articles, same on all campuses */}
         <section ref={sectionRefs.week1} className="mb-16">
           <div className="flex items-center mb-4">
@@ -404,7 +402,7 @@ export default function Campus() {
                     return (
                       <Link
                         key={club.id}
-                        href={`/campus/${slugForLinks}/clubs/${club.id}`}
+                        href={`/campus/${slugForLinks}/clubs/${club.slug}`}
                         className="block bg-white rounded-xl border border-[rgba(30,41,59,0.1)] transition-all hover:border-[#991b1b] hover:shadow-lg overflow-hidden flex flex-col"
                         style={{ boxShadow: '0 4px 12px rgba(30, 41, 59, 0.08)' }}
                       >

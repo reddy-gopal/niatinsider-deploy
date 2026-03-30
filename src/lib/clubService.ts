@@ -6,7 +6,7 @@ export const clubService = {
   list(params?: Record<string, string | number | boolean | undefined>) {
     return articlesApi.get<PaginatedResponse<ApiClub>>('clubs/', { params });
   },
-  detail(id: string | number) {
-    return articlesApi.get<ApiClub>(`clubs/${id}/`);
+  detail(idOrSlug: string | number, params?: Record<string, string | number | boolean | undefined>) {
+    return articlesApi.get<ApiClub>(`clubs/${idOrSlug}/`, { params });
   },
 };

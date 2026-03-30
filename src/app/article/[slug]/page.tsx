@@ -195,6 +195,12 @@ export default function Article() {
   const relatedCtaLabel = fromApi && apiArticle?.campus_name
     ? `See all ${apiArticle.campus_name} articles \u2192`
     : 'See all articles \u2192';
+  const clubCampusSlug =
+    fromApi && apiArticle?.campus_id ? campusSlugForId(apiArticle.campus_id) : null;
+  const clubProfileHref =
+    fromApi && apiArticle?.category === 'club-directory' && apiArticle?.subcategory && clubCampusSlug
+      ? `/campus/${clubCampusSlug}/clubs/${apiArticle.subcategory}`
+      : null;
 
   useEffect(() => {
     fetchMe().then((me) => setCurrentUsername(me?.username ?? null));
@@ -386,6 +392,11 @@ export default function Article() {
                     <FontAwesomeIcon icon={faLinkedin} style={{ color: 'rgb(52, 101, 216)' }} />
                     LinkedIn
                   </a>
+                )}
+                {clubProfileHref && (
+                  <Link href={clubProfileHref} className="text-[#991b1b] hover:underline">
+                    Published by {apiArticle?.subcategory?.replace(/-/g, ' ')}
+                  </Link>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
