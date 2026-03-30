@@ -34,7 +34,13 @@ export default function ArticleCard({ article, campusSlug }: ArticleCardProps) {
 
         <div className="flex items-center justify-between text-xs text-black">
           <div className="flex items-center space-x-3">
-            <span>By {article.author}</span>
+            <Link
+              href={`/author/${article.author}`}
+              onClick={(e) => e.stopPropagation()}
+              className="hover:text-[#991b1b] transition-colors"
+            >
+              By {article.author}
+            </Link>
             <span className="flex items-center">
               <Clock className="h-3 w-3 mr-1" />
               {article.updatedDays === 0 ? 'Today' : `${article.updatedDays} days ago`}

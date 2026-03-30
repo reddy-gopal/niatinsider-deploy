@@ -1,50 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NIAT Insider 🚀
 
-## Getting Started
+**The unofficial NIAT survival guide. For the students. By the students. Of the students.**
 
-First, run the development server:
+NIAT Insider is a comprehensive platform designed to help students navigate campus life, admissions, placements, and more at NIAT campuses across India. It features authentic student-written reviews, how-to guides, and a community-driven approach to sharing knowledge.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Key Features
+
+- 🏫 **Campus Directory:** Explore 15+ NIAT campuses across India with detailed reviews and info.
+- 📘 **Survival Guides:** Practical "How-to" guides for every stage of your NIAT journey (Week 1, Hostels, Clubs).
+- ✍️ **Student Reviews:** Read honest, authentic reviews from students already on the ground.
+- 📈 **Placements & Insights:** Get real data and advice on placements and internships.
+- 🤝 **Community Contributions:** A platform where students can contribute their own articles and insights.
+- 🔍 **Search & Discover:** Quickly find specific campus details or guide articles.
+
+## 🛠️ Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/)
+- **State & Data:** [SWR](https://swr.vercel.app/), [Axios](https://axios-http.com/)
+- **Forms & Validation:** [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- **Charts:** [Recharts](https://recharts.org/)
+- **Feedback:** [Sonner](https://sonner.steventey.com/)
+
+## 📁 Project Structure
+
+```text
+src/
+├── app/            # Next.js App Router (pages and layouts)
+├── components/     # Reusable UI components (Navbar, Footer, CampusCard, etc.)
+├── constants/      # App-wide constants and configuration
+├── data/           # Static data and mock data
+├── hooks/          # Custom React hooks (useCampuses, useArticles, etc.)
+├── lib/            # Utility functions and API clients
+├── types/          # TypeScript interface and type definitions
+└── proxy.ts        # API proxy configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18+ 
+- npm / yarn / pnpm
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd niatinsider
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+4. **Build for production:**
+   ```bash
+   npm run build
+   npm start
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🌐 Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The application is optimized for deployment on the [Vercel Platform](https://vercel.com).
+For additional setup guidance, see the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
 
-## More About NIAT INSIDER
-
-This platform helps juniors connect with seniors for guidance, resources, and real college insights.
-## FROM STUDENTS BY STUDENTS
-
-Connect with seniors
-Ask doubts and get guidance
-Explore real experiences about academics, internships, and college life
-
-## Technologies Used:
-- Typescript
-- Javascript
-- CSS
+---
+*Built with ❤️ for the NIAT community.*
