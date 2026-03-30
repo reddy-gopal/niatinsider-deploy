@@ -62,6 +62,13 @@ export default function Clubs() {
     return `https://instagram.com/${clean}`;
   };
 
+  const normalizeExternalUrl = (value?: string | null) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    return `https://${trimmed}`;
+  };
+
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       <Navbar />
@@ -163,7 +170,12 @@ export default function Clubs() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {filteredClubs.map((club) => (
+            {filteredClubs.map((club) => {
+              const chapter = (club.campus_chapters || []).find((c) => String(c.campus_id) === campusId) || club.campus_chapters?.[0];
+              const instagram = (club.instagram || chapter?.instagram || '').trim();
+              const linkedin = normalizeExternalUrl(club.linkedin || chapter?.linkedin || '');
+
+              return (
               <div key={club.id}>
                 {/* PART 1: Club card — vertical + horizontal split */}
                 <article
@@ -275,9 +287,9 @@ export default function Clubs() {
                             Email Club
                           </a>
                         )}
-                        {club.instagram && (
+                        {instagram && (
                           <a
-                            href={club.instagram.startsWith('http') ? club.instagram : instagramUrl(club.instagram)}
+                            href={instagram.startsWith('http') ? instagram : instagramUrl(instagram)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -299,9 +311,9 @@ export default function Clubs() {
                             Instagram
                           </a>
                         )}
-                        {club.linkedin && (
+                        {linkedin && (
                           <a
-                            href={club.linkedin}
+                            href={linkedin}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -331,7 +343,8 @@ export default function Clubs() {
                   </div>
                 </article>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
 

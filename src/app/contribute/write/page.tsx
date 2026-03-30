@@ -186,6 +186,9 @@ function WriteArticleClientContent() {
   const [loadEditError, setLoadEditError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const editParam = searchParams.get('edit');
+  const prefillCampusParam = searchParams.get('campus');
+  const prefillCategoryParam = searchParams.get('category');
+  const prefillSubcategoryParam = searchParams.get('subcategory');
   const router = useRouter();
 
   useEffect(() => {
@@ -308,6 +311,34 @@ function WriteArticleClientContent() {
       if (p?.campus_id != null) setCampusId((prev) => (prev === '' ? String(p.campus_id) : prev));
     });
   }, [editParam]);
+
+  // Allow pre-filling section/subcategory/campus from deep links (e.g. club detail CTA).
+  useEffect(() => {
+    if (editParam != null && editParam !== '') return;
+    if (!prefillCampusParam && !prefillCategoryParam && !prefillSubcategoryParam) return;
+
+    if (prefillCampusParam) {
+      setCampusId(prefillCampusParam);
+    }
+
+    if (prefillCategoryParam) {
+      const matchedCategory = categories.find((c: ApiCategory) => c.slug === prefillCategoryParam);
+      if (matchedCategory?.id != null) {
+        setCategoryId(String(matchedCategory.id));
+        setShowSectionSelect(false);
+      }
+    }
+
+    if (prefillSubcategoryParam) {
+      setSubcategory(prefillSubcategoryParam);
+    }
+  }, [
+    editParam,
+    categories,
+    prefillCampusParam,
+    prefillCategoryParam,
+    prefillSubcategoryParam,
+  ]);
 
   const execCommand = useCallback((cmd: string, value?: string) => {
     document.execCommand(cmd, false, value);

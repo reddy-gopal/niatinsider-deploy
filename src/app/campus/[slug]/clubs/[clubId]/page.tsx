@@ -261,9 +261,10 @@ export default function ClubDetail() {
         {showLeadership && (
           <section className="mt-8">
             <h2 className="font-display text-xl font-semibold text-[#1e293b] mb-4">Leadership</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
                   {validClub.president_photo ? (
                     <img src={validClub.president_photo} alt={validClub.president_name || 'President'} className="h-12 w-12 rounded-full object-cover" />
                   ) : (
@@ -273,25 +274,24 @@ export default function ClubDetail() {
                     <p className="text-sm text-[#64748b]">President</p>
                     <p className="font-medium text-[#1e293b]">{validClub.president_name || '—'}</p>
                   </div>
+                  </div>
+                  {linkedinLink && (
+                    <a
+                      href={linkedinLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm px-3 py-1.5 border rounded-lg transition-colors"
+                      style={{ borderColor: '#0a66c2', color: '#0a66c2' }}
+                      aria-label="President LinkedIn profile"
+                      title="LinkedIn"
+                    >
+                      <FontAwesomeIcon icon={faLinkedin} style={{ color: 'rgb(52, 101, 216)' }} className="w-4 h-4" />
+                      LinkedIn
+                    </a>
+                  )}
                 </div>
                 {validClub.president_email && (
                   <a href={`mailto:${validClub.president_email}`} className="mt-3 inline-flex text-sm text-[#991b1b] hover:underline">{validClub.president_email}</a>
-                )}
-              </div>
-              <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-4">
-                <div className="flex items-center gap-3">
-                  {validClub.vice_president_photo ? (
-                    <img src={validClub.vice_president_photo} alt={validClub.vice_president_name || 'Vice President'} className="h-12 w-12 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-[#f1f5f9] flex items-center justify-center"><Users className="h-5 w-5 text-[#64748b]" /></div>
-                  )}
-                  <div>
-                    <p className="text-sm text-[#64748b]">Vice President</p>
-                    <p className="font-medium text-[#1e293b]">{validClub.vice_president_name || '—'}</p>
-                  </div>
-                </div>
-                {validClub.vice_president_email && (
-                  <a href={`mailto:${validClub.vice_president_email}`} className="mt-3 inline-flex text-sm text-[#991b1b] hover:underline">{validClub.vice_president_email}</a>
                 )}
               </div>
             </div>
@@ -316,7 +316,18 @@ export default function ClubDetail() {
             {articlesLoading ? (
               <div className="py-8 text-[#64748b]">Loading articles...</div>
             ) : cardArticles.length === 0 ? (
-              <p className="text-[#64748b]">No articles published by this club yet.</p>
+              <div className="rounded-xl border border-[rgba(30,41,59,0.1)] bg-[#fcfcfd] p-5">
+                <p className="text-[#1e293b] font-medium mb-2">Be the first to publish for {validClub.name}</p>
+                <p className="text-sm text-[#64748b] mb-4">
+                  Share an update, event, or achievement from this club.
+                </p>
+                <Link
+                  href={`/contribute/write?campus=${encodeURIComponent(campusId)}&category=club-directory&subcategory=${encodeURIComponent(validClub.slug)}`}
+                  className="inline-flex items-center rounded-lg bg-[#991b1b] px-4 py-2 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
+                >
+                  Write an article for this club
+                </Link>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {cardArticles.map((a) => (
