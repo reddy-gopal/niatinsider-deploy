@@ -10,33 +10,10 @@ type PageProps = {
   params: Promise<{ slug: string; clubId: string }>;
 };
 
-export async function generateStaticParams() {
-  try {
-    const campusesRes = await fetch(`${API_BASE}/api/campuses/`, { next: { revalidate: 86400 } });
-    if (!campusesRes.ok) return [];
-    const campusesJson = await campusesRes.json() as CampusListItem[] | { results?: CampusListItem[] };
-    const campuses = Array.isArray(campusesJson) ? campusesJson : (campusesJson.results ?? []);
+export const dynamicParams = true;
 
-    const nested = await Promise.all(
-      campuses.map(async (campus) => {
-        try {
-          const clubsRes = await fetch(
-            `${API_BASE}/api/articles/clubs/?campus=${encodeURIComponent(String(campus.id))}&is_active=true&page_size=200`,
-            { next: { revalidate: 86400 } }
-          );
-          if (!clubsRes.ok) return [];
-          const clubsJson = await clubsRes.json() as PaginatedResponse<ApiClub> | ApiClub[];
-          const clubs = Array.isArray(clubsJson) ? clubsJson : (clubsJson.results ?? []);
-          return clubs.map((club) => ({ slug: campus.slug, clubId: club.slug }));
-        } catch {
-          return [];
-        }
-      })
-    );
-    return nested.flat();
-  } catch {
-    return [];
-  }
+export async function generateStaticParams() {
+  return [];
 }
 
 export default async function ClubDetailPage({ params }: PageProps) {

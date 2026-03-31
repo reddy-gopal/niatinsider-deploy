@@ -12,14 +12,10 @@ function pickArticles(data: PaginatedResponse<ApiArticle> | ApiArticle[] | null)
   return Array.isArray(data) ? data : (data.results ?? []);
 }
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  const res = await fetch(`${API_BASE}/api/articles/articles/?status=published&page_size=500`, {
-    next: { revalidate: 86400 },
-  });
-  if (!res.ok) return [];
-  const json = (await res.json()) as PaginatedResponse<ApiArticle> | ApiArticle[] | null;
-  const articles = pickArticles(json);
-  return articles.filter((article) => Boolean(article.slug)).map((article) => ({ slug: article.slug }));
+  return [];
 }
 
 export default async function ArticlePage({ params }: PageProps) {

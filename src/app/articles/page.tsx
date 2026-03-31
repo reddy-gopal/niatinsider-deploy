@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { API_BASE } from '@/lib/apiBase';
 import type { ApiCategory } from '@/lib/articleService';
 import type { ApiArticle, PaginatedResponse } from '@/types/articleApi';
@@ -39,11 +40,13 @@ export default async function ArticlesPage() {
   const { articles, next } = pickArticles(articlesJson);
 
   return (
-    <ArticlesPageClient
-      initialArticles={articles}
-      initialNext={next}
-      categories={categories}
-      campuses={campuses}
-    />
+    <Suspense fallback={null}>
+      <ArticlesPageClient
+        initialArticles={articles}
+        initialNext={next}
+        categories={categories}
+        campuses={campuses}
+      />
+    </Suspense>
   );
 }

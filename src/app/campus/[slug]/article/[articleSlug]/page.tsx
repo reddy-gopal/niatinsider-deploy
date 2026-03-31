@@ -8,33 +8,10 @@ type PageProps = {
   params: Promise<{ slug: string; articleSlug: string }>;
 };
 
-export async function generateStaticParams() {
-  try {
-    const campusesRes = await fetch(`${API_BASE}/api/campuses/`, { next: { revalidate: 86400 } });
-    if (!campusesRes.ok) return [];
-    const campusesJson = await campusesRes.json() as CampusListItem[] | { results?: CampusListItem[] };
-    const campuses = Array.isArray(campusesJson) ? campusesJson : (campusesJson.results ?? []);
+export const dynamicParams = true;
 
-    const nested = await Promise.all(
-      campuses.map(async (campus) => {
-        try {
-          const articleRes = await fetch(
-            `${API_BASE}/api/articles/articles/?campus=${encodeURIComponent(String(campus.id))}&status=published&page_size=200`,
-            { next: { revalidate: 3600 } }
-          );
-          if (!articleRes.ok) return [];
-          const data = await articleRes.json() as PaginatedResponse<ApiArticle> | ApiArticle[];
-          const list = Array.isArray(data) ? data : (data.results ?? []);
-          return list.map((a) => ({ slug: campus.slug, articleSlug: a.slug }));
-        } catch {
-          return [];
-        }
-      })
-    );
-    return nested.flat();
-  } catch {
-    return [];
-  }
+export async function generateStaticParams() {
+  return [];
 }
 
 export default async function ArticlePage({ params }: PageProps) {

@@ -19,6 +19,7 @@ function getErrorMessage(err: unknown): string {
 }
 
 export default function ForgotPasswordPage() {
+  const OTP_LENGTH = 4;
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -54,8 +55,8 @@ export default function ForgotPasswordPage() {
   };
 
   const handleVerifyOtp = async () => {
-    if (!code.trim()) {
-      setError("Enter OTP code.");
+    if (code.trim().length !== OTP_LENGTH) {
+      setError(`Enter a valid ${OTP_LENGTH}-digit OTP.`);
       return;
     }
     setLoading(true);
@@ -110,17 +111,21 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-white overflow-x-hidden">
       <Navbar />
       <main className="max-w-md mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full min-w-0">
-        <div className="rounded-2xl border border-[rgba(30,41,59,0.1)] p-5 sm:p-8 shadow-sm" style={{ backgroundColor: "#fff8eb" }}>
-          <h1 className="font-playfair text-2xl font-bold text-[#1e293b] mb-2">Forgot password</h1>
-          <p className="text-sm text-[#64748b] mb-6">Verify your mobile number, then set a new password.</p>
+        <div className="rounded-2xl border border-[rgba(30,41,59,0.1)] p-5 sm:p-8 shadow-sm transition-all duration-300" style={{ backgroundColor: "#fff8eb" }}>
+          <div className="mb-5">
+            <h1 className="font-playfair text-2xl font-bold text-[#1e293b] mb-2">Reset your password</h1>
+            <p className="text-sm text-[#64748b]">
+              Step {step} of 2: {step === 1 ? "Verify your phone with OTP" : "Set a new secure password"}.
+            </p>
+          </div>
 
           <div className="flex items-center gap-2 mb-6">
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-[#991b1b]" : "bg-[#e2e8f0]"}`} />
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-[#991b1b]" : "bg-[#e2e8f0]"}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= 1 ? "bg-[#991b1b]" : "bg-[#e2e8f0]"}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= 2 ? "bg-[#991b1b]" : "bg-[#e2e8f0]"}`} />
           </div>
 
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-[fadeIn_.28s_ease-out]">
               <div>
                 <label htmlFor="forgot-phone" className="block text-sm font-medium text-[#1e293b] mb-1.5">
                   Mobile number
@@ -139,6 +144,7 @@ export default function ForgotPasswordPage() {
                   placeholder="e.g. 9876543210"
                   className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
                 />
+                <p className="mt-1.5 text-xs text-[#64748b]">Enter the same phone number used during signup.</p>
               </div>
 
               <button
@@ -151,7 +157,7 @@ export default function ForgotPasswordPage() {
               </button>
 
               {otpSent && (
-                <div>
+                <div className="rounded-xl border border-[rgba(30,41,59,0.12)] bg-white p-3.5 transition-all duration-300">
                   <label htmlFor="forgot-otp" className="block text-sm font-medium text-[#1e293b] mb-1.5">
                     OTP code
                   </label>
@@ -159,19 +165,20 @@ export default function ForgotPasswordPage() {
                     id="forgot-otp"
                     type="text"
                     inputMode="numeric"
-                    maxLength={6}
+                    maxLength={OTP_LENGTH}
                     value={code}
                     onChange={(e) => {
-                      setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      setCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH));
                       setError(null);
                     }}
-                    placeholder="Enter 6-digit OTP"
-                    className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
+                    placeholder={`Enter ${OTP_LENGTH}-digit OTP`}
+                    className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-center tracking-[0.35em] text-base font-semibold text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
                   />
+                  <p className="mt-1.5 text-xs text-[#64748b]">Use the {OTP_LENGTH}-digit code sent to your mobile.</p>
                   <button
                     type="button"
                     onClick={handleVerifyOtp}
-                    disabled={!code.trim() || loading}
+                    disabled={code.trim().length !== OTP_LENGTH || loading}
                     className="mt-3 w-full rounded-xl border border-[#991b1b] text-[#991b1b] px-4 py-2.5 text-sm font-medium hover:bg-[#fbf2f3] disabled:opacity-50"
                   >
                     {loading ? "Verifying..." : "Verify OTP"}
@@ -182,7 +189,7 @@ export default function ForgotPasswordPage() {
           )}
 
           {step === 2 && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
+            <form onSubmit={handleResetPassword} className="space-y-4 animate-[fadeIn_.28s_ease-out]">
               <div>
                 <label htmlFor="forgot-new-password" className="block text-sm font-medium text-[#1e293b] mb-1.5">
                   New password
@@ -198,6 +205,7 @@ export default function ForgotPasswordPage() {
                   }}
                   className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
                 />
+                <p className="mt-1.5 text-xs text-[#64748b]">Use at least 8 characters.</p>
               </div>
               <div>
                 <label htmlFor="forgot-confirm-password" className="block text-sm font-medium text-[#1e293b] mb-1.5">
@@ -227,6 +235,13 @@ export default function ForgotPasswordPage() {
 
           {error && <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-xl">{error}</p>}
           {message && <p className="mt-4 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2.5 rounded-xl">{message}</p>}
+          <button
+            type="button"
+            onClick={() => router.push("/login")}
+            className="mt-4 w-full text-center text-sm font-medium text-[#991b1b] hover:underline"
+          >
+            Back to login
+          </button>
         </div>
       </main>
       <Footer />

@@ -8,16 +8,10 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  try {
-    const res = await fetch(`${API_BASE}/api/campuses/`, { next: { revalidate: 86400 } });
-    if (!res.ok) return [];
-    const campuses = (await res.json()) as CampusListItem[] | { results?: CampusListItem[] };
-    const list = Array.isArray(campuses) ? campuses : (campuses.results ?? []);
-    return list.map((c: { slug: string }) => ({ slug: c.slug }));
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 export default async function CampusPage({ params }: PageProps) {

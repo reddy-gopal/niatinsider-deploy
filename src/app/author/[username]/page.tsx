@@ -12,16 +12,10 @@ type AuthorsListResponse = {
   results?: Array<{ username?: string }>;
 };
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  const res = await fetch(`${API_BASE}/api/authors/?page_size=500`, {
-    next: { revalidate: 86400 },
-  });
-  if (!res.ok) return [];
-  const data = (await res.json()) as AuthorsListResponse | Array<{ username?: string }> | null;
-  const authors = Array.isArray(data) ? data : (data?.results ?? []);
-  return authors
-    .filter((author): author is { username: string } => typeof author?.username === 'string' && author.username.length > 0)
-    .map((author) => ({ username: author.username }));
+  return [];
 }
 
 export default async function AuthorPage({ params }: PageProps) {
