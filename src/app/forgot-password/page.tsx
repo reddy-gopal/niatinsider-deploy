@@ -137,24 +137,43 @@ export default function ForgotPasswordPage() {
                   pattern="[0-9]*"
                   maxLength={10}
                   value={phoneNumber}
+                  disabled={otpSent}
                   onChange={(e) => {
                     setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
                     setError(null);
                   }}
                   placeholder="e.g. 9876543210"
-                  className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
+                  className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b] disabled:bg-slate-100 disabled:text-slate-500"
                 />
                 <p className="mt-1.5 text-xs text-[#64748b]">Enter the same phone number used during signup.</p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleRequestOtp}
-                disabled={!isPhoneValid || loading}
-                className="w-full rounded-xl bg-[#991b1b] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50"
-              >
-                {loading ? "Sending OTP..." : "Send OTP"}
-              </button>
+              {!otpSent ? (
+                <button
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={!isPhoneValid || loading}
+                  className="w-full rounded-xl bg-[#991b1b] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50"
+                >
+                  {loading ? "Sending OTP..." : "Send OTP"}
+                </button>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border border-[rgba(30,41,59,0.12)] bg-[#fff8eb] px-3 py-2 text-xs text-[#64748b]">
+                  <span>OTP sent to {phoneDigits}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setCode("");
+                      setMessage(null);
+                      setError(null);
+                    }}
+                    className="font-medium text-[#991b1b] hover:underline"
+                  >
+                    Change number
+                  </button>
+                </div>
+              )}
 
               {otpSent && (
                 <div className="rounded-xl border border-[rgba(30,41,59,0.12)] bg-white p-3.5 transition-all duration-300">
