@@ -122,6 +122,11 @@ export default function LoginClient() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              <div className="mt-2 text-right">
+                <Link href="/forgot-password" className="text-sm font-medium text-[#991b1b] hover:underline">
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             {error && (

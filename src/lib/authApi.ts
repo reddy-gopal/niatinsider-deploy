@@ -71,6 +71,11 @@ export async function fetchMe(): Promise<MeProfile | null> {
   }
 }
 
+export async function updateMeProfile(payload: Partial<Pick<MeProfile, 'username' | 'email'>>): Promise<MeProfile> {
+  const { data } = await authApi.patch<MeProfile>('/auth/me/', payload);
+  return data;
+}
+
 /** Get Founding Editor profile (college details). 403 if user is not founding_editor. */
 export async function fetchFoundingEditorProfile(): Promise<FoundingEditorProfile | null> {
   if (!localStorage.getItem('niat_access')) return null;
@@ -164,6 +169,59 @@ export async function loginByUsernamePassword(
     username,
     password,
   });
+  return data;
+}
+
+export async function requestForgotPasswordOtp(phone_number: string): Promise<{ detail: string }> {
+  const { data } = await api.post<{ detail: string }>('/auth/forgot-password/request/', { phone_number: phone_number.trim() });
+  return data;
+}
+
+export async function verifyForgotPasswordOtp(phone_number: string, code: string): Promise<{ verified: boolean }> {
+  const { data } = await api.post<{ verified: boolean }>('/auth/forgot-password/verify/', {
+    phone_number: phone_number.trim(),
+    code: code.trim(),
+  });
+  return data;
+}
+
+export async function resetPasswordWithOtp(payload: {
+  phone_number: string;
+  code: string;
+  new_password: string;
+  confirm_password: string;
+}): Promise<{ detail: string }> {
+  const { data } = await api.post<{ detail: string }>('/auth/forgot-password/reset-confirm/', payload);
+  return data;
+}
+
+export async function checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
+  const { data } = await authApi.get<{ available: boolean }>('/auth/username-available/', {
+    params: { username: username.trim() },
+  });
+  return data;
+}
+
+export async function requestChangePhoneOtp(phone_number: string): Promise<{ detail: string }> {
+  const { data } = await authApi.post<{ detail: string }>('/auth/change-phone/request-otp/', {
+    phone_number: phone_number.trim(),
+  });
+  return data;
+}
+
+export async function confirmChangePhone(phone_number: string, code: string): Promise<{ detail: string }> {
+  const { data } = await authApi.post<{ detail: string }>('/auth/change-phone/confirm/', {
+    phone_number: phone_number.trim(),
+    code: code.trim(),
+  });
+  return data;
+}
+
+export async function changePassword(payload: {
+  current_password: string;
+  new_password: string;
+}): Promise<{ detail: string }> {
+  const { data } = await authApi.post<{ detail: string }>('/auth/change-password/', payload);
   return data;
 }
 
