@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
-import { loginByPhonePassword, setTokens } from '@/lib/authApi';
+import { loginByPhonePassword } from '@/lib/authApi';
+import { useAuthStore } from '@/store/authStore';
+import { Spinner } from '@/components/ui/spinner';
 
 function getErrorMessage(err: unknown): string {
   if (err && typeof err === 'object' && 'response' in err) {
@@ -25,7 +27,7 @@ export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const nextUrl = searchParams.get('from') ?? '/';
+  const nextUrl = searchParams.get('from') ?? '/home';
 
   const phoneDigits = phone.replace(/\D/g, '');
   const isPhoneValid = phoneDigits.length === 10;
@@ -44,10 +46,11 @@ export default function LoginClient() {
     setError(null);
     setLoading(true);
     try {
-      const { access, refresh } = await loginByPhonePassword(p, password);
-      setTokens(access, refresh);
+      await loginByPhonePassword(p, password);
+      await useAuthStore.getState().bootstrapAuth({ force: true });
+      useAuthStore.setState({ authChecked: true });
       window.dispatchEvent(new Event('niat:auth'));
-      router.replace(nextUrl.startsWith('/') ? nextUrl : '/');
+      router.replace(nextUrl.startsWith('/') ? nextUrl : '/home');
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
@@ -57,7 +60,7 @@ export default function LoginClient() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <Navbar />
+      <PublicNavbar />
       <main className="max-w-md mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full min-w-0">
         <div
           className="rounded-2xl border border-[rgba(30,41,59,0.1)] p-5 sm:p-8 shadow-sm"
@@ -89,6 +92,7 @@ export default function LoginClient() {
                 }}
                 placeholder="e.g. 9876543210"
                 autoComplete="tel"
+                suppressHydrationWarning
                 className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
               />
               {phone.length > 0 && !isPhoneValid && (
@@ -111,6 +115,7 @@ export default function LoginClient() {
                   }}
                   placeholder="Enter your password"
                   autoComplete="current-password"
+                  suppressHydrationWarning
                   className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2.5 pr-10 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-[#991b1b]"
                 />
                 <button
@@ -118,6 +123,7 @@ export default function LoginClient() {
                   onClick={() => setShowPassword((p) => !p)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#64748b] hover:text-[#1e293b] focus:outline-none rounded"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  suppressHydrationWarning
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -144,9 +150,8 @@ export default function LoginClient() {
               className="w-full rounded-xl bg-[#991b1b] px-8 py-3 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="animate-spin rounded-full border-2 border-white/40 border-t-white size-4 shrink-0" role="status" aria-label="Signing in" />
-                  Signing in...
+                <span className="inline-flex items-center justify-center">
+                  <Spinner size="sm" className="border-white/30 border-t-white" />
                 </span>
               ) : (
                 'Log in'

@@ -8,9 +8,11 @@ import { ChevronRight, MapPin, Clock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import FoundingEditorBadge from '@/components/FoundingEditorBadge';
 import { useCampuses } from '@/hooks/useCampuses';
 import { authorService, type ApiAuthorProfile } from '@/lib/authorService';
 import type { ApiArticle } from '@/types/articleApi';
+import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
   username: string;
@@ -61,6 +63,10 @@ export default function AuthorPageClient({ username, author, initialArticles, in
           </div>
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{author.username ?? username}</h1>
+            {/* If this endpoint omits `badge`, this component intentionally renders nothing. */}
+            <div className="mb-3">
+              <FoundingEditorBadge badge={author.badge ?? null} />
+            </div>
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-4 gap-y-2 text-gray-600 mb-4">
               <span className="flex items-center text-sm">
                 <MapPin className="h-4 w-4 mr-1.5 text-gray-400" />
@@ -86,7 +92,7 @@ export default function AuthorPageClient({ username, author, initialArticles, in
           <div className="divide-y divide-[rgba(30,41,59,0.08)]">
             {articles.map((article) => {
               const articleCampusSlug = campuses.find((c) => String(c.id) === String(article.campus_id))?.slug;
-              const articleHref = articleCampusSlug ? `/campus/${articleCampusSlug}/article/${article.slug}` : `/article/${article.slug}`;
+              const articleHref = articleCampusSlug ? `/${articleCampusSlug}/article/${article.slug}` : `/article/${article.slug}`;
               return (
                 <Link key={article.id} href={articleHref} className="flex gap-4 py-4 pl-3 border-l-[3px] border-l-transparent transition-all duration-150 ease-out hover:border-l-[#991b1b]">
                   {article.cover_image && (
@@ -124,7 +130,7 @@ export default function AuthorPageClient({ username, author, initialArticles, in
                 disabled={loadingMore}
                 className="px-6 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-semibold text-gray-900 hover:border-[#991b1b] hover:text-[#991b1b] transition-all disabled:opacity-50"
               >
-                {loadingMore ? 'Loading...' : 'Load more contributions'}
+                {loadingMore ? <Spinner size="sm" className="border-[#1e293b]/20" /> : 'Load more contributions'}
               </button>
             </div>
           )}

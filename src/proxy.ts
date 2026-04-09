@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('niat_access')?.value
+  const token = request.cookies.get('access_token')?.value
 
   // Unauthenticated users are allowed.
   if (!token) {
@@ -16,7 +16,7 @@ export function proxy(request: NextRequest) {
   }
 
   const url = request.nextUrl.clone()
-  url.pathname = '/onboarding'
+  url.pathname = '/onboarding/role'
   url.searchParams.set('from', request.nextUrl.pathname)
   return NextResponse.redirect(url)
 }

@@ -11,6 +11,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { usePublishedArticles } from '@/hooks/useArticles';
 import type { ApiArticle } from '@/types/articleApi';
 import { getCategoryConfig } from '@/data/articleCategories';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function SearchClient() {
   const router = useRouter();
@@ -138,8 +139,7 @@ export default function SearchClient() {
         <div className="space-y-4 mb-12">
           {loading ? (
             <div className="py-12 flex items-center justify-center gap-2 text-[#64748b]">
-              <span className="animate-spin rounded-full border-2 border-[#991b1b]/30 border-t-[#991b1b] size-6" aria-hidden />
-              Loading...
+              <Spinner />
             </div>
           ) : results.length === 0 ? (
             <div className="bg-gray-50 rounded-lg p-8 text-center">
@@ -167,7 +167,7 @@ export default function SearchClient() {
               {results.map((result) => (
                 <Link
                   key={result.id}
-                  href={result.campusSlug ? `/campus/${result.campusSlug}/article/${result.slug}` : `/article/${result.slug}`}
+                  href={result.campusSlug ? `/${result.campusSlug}/article/${result.slug}` : `/article/${result.slug}`}
                   className="block bg-white rounded-lg shadow-soft p-5 hover:shadow-card transition-shadow"
                 >
                   <h3 className="font-display text-lg font-bold text-black mb-2">

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import RequireOnboarding from '@/components/RequireOnboarding'
 
 export const metadata: Metadata = {
   title: 'My Profile',
@@ -14,5 +15,5 @@ export default function ProfileLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return <RequireOnboarding>{children}</RequireOnboarding>
 }

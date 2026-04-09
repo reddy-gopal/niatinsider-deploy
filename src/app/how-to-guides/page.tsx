@@ -6,6 +6,7 @@ import { Search, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import WriteArticleCTA from '@/components/WriteArticleCTA';
 import { usePublishedArticles } from '@/hooks/useArticles';
 import type { GuideTopic } from '@/types';
 import type { ApiArticle } from '@/types/articleApi';
@@ -184,12 +185,11 @@ export default function HowToGuides() {
           <p className="text-[#1e293b] font-medium mb-4">
             Know something useful? Write a guide for all NIAT students.
           </p>
-          <Link
-            href="/contribute/write"
+          <WriteArticleCTA
+            label="Write a Guide"
             className="inline-flex items-center px-5 py-2.5 bg-[#991b1b] text-white text-sm font-medium rounded-lg hover:bg-[#7f1d1d] transition-colors"
-          >
-            Write a Guide <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
+            iconAfter={<ChevronRight className="h-4 w-4 ml-1" />}
+          />
         </section>
       </div>
 

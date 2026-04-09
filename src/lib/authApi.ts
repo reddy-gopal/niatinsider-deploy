@@ -1,49 +1,150 @@
 import axios from 'axios';
 import { API_BASE } from './apiBase';
+import { useAuthStore } from '@/store/authStore';
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: `${API_BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 /** Axios instance for auth endpoints; retries with refresh token on 401. */
-const authApi = axios.create({
+export const authApi = axios.create({
   baseURL: `${API_BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
-authApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('niat_access');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+/**
+ * Same-origin Next.js API routes used only for auth cookie domain bridging.
+ * Keeps HttpOnly cookies on the frontend domain so middleware can read them.
+ */
+export const nextAuthApi = axios.create({
+  baseURL: '',
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
-authApi.interceptors.response.use(
-  (res) => res,
-  async (error) => {
-    const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+let refreshPromise: Promise<void> | null = null;
+let authFailureHandled = false;
+
+/** Same join semantics as axios (baseURL + url), so pathname matches the real request. */
+function combineURLs(baseURL: string, relativeURL: string): string {
+  const rel = relativeURL.split('?')[0];
+  return rel
+    ? `${baseURL.replace(/\/+$/, '')}/${rel.replace(/^\/+/, '')}`
+    : baseURL;
+}
+
+/**
+ * Pathname of the request as axios actually sends it. `new URL('/profiles/me/', base)` is wrong
+ * here: a leading `/` on `url` is host-absolute and drops the `/api` segment from `baseURL`.
+ */
+export function requestPathnameFromConfig(config: { baseURL?: string; url?: string }): string {
+  const base = config.baseURL ?? '';
+  const rawUrl = config.url ?? '';
+  if (!rawUrl) return '';
+  const url = rawUrl.split('?')[0];
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return '';
+    }
+  }
+  if (!base) {
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+  const full = combineURLs(base, url);
+  try {
+    return new URL(full).pathname;
+  } catch {
+    return '';
+  }
+}
+
+type AuthRetryConfig = { baseURL?: string; url?: string; skipAuthRetry?: boolean };
+
+/**
+ * Do not chain refresh/logout on these 401s:
+ * - Requests explicitly marked optional (`skipAuthRetry`, e.g. bootstrap / fetchMe for guests).
+ * - Auth endpoints themselves (prevents loops and pointless work on login failures).
+ *
+ * Do not path-match `/profiles/me` or `/auth/me` here — a logged-in user with an expired access
+ * token still needs refresh on those routes.
+ */
+export function shouldSkipAuthRetry(config?: AuthRetryConfig): boolean {
+  if (config?.skipAuthRetry) return true;
+  const path = requestPathnameFromConfig(config ?? {});
+  if (!path) return false;
+  return (
+    /\/token\/refresh\/?$/.test(path) ||
+    /\/api\/auth\/refresh\/?$/.test(path) ||
+    /\/auth\/logout\/?$/.test(path) ||
+    /\/api\/auth\/logout\/?$/.test(path) ||
+    /\/auth\/login\/phone-password\/?$/.test(path) ||
+    /\/api\/auth\/login\/?$/.test(path) ||
+    /\/auth\/login\/phone\/?$/.test(path) ||
+    /\/token\/?$/.test(path)
+  );
+}
+
+export async function ensureRefreshed(): Promise<void> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+  refreshPromise = nextAuthApi
+    .post('/api/auth/refresh', {})
+    .then(() => {
+      authFailureHandled = false;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
+
+export async function handleAuthFailureRedirect(): Promise<void> {
+  if (authFailureHandled) return;
+  authFailureHandled = true;
+  try {
+    await nextAuthApi.post('/api/auth/logout', {});
+  } catch {
+    // Best effort server cleanup.
+  }
+  await useAuthStore.getState().clearAuth({ callLogout: false });
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+}
+
+function attachAuthRefreshInterceptor(client: typeof authApi): void {
+  client.interceptors.response.use(
+    (res) => res,
+    async (error) => {
+      const original = error.config ?? {};
+      if (error.response?.status !== 401) {
+        return Promise.reject(error);
+      }
+
+      if (authFailureHandled || shouldSkipAuthRetry(original as AuthRetryConfig) || original._retry) {
+        return Promise.reject(error);
+      }
+
       original._retry = true;
-      const refresh = localStorage.getItem('niat_refresh');
-      if (refresh) {
-        try {
-          const { data } = await axios.post<{ access: string }>(`${API_BASE}/api/token/refresh/`, { refresh });
-          localStorage.setItem('niat_access', data.access);
-          document.cookie = `niat_access=${data.access}; path=/; max-age=86400`;
-          if (original.headers) original.headers.Authorization = `Bearer ${data.access}`;
-          return authApi(original);
-        } catch {
-          localStorage.removeItem('niat_access');
-          document.cookie = 'niat_access=; path=/; max-age=0';
-          document.cookie = 'niat_onboarded=; path=/; max-age=0';
-          document.cookie = 'niat_needs_onboarding=; path=/; max-age=0';
-          localStorage.removeItem('niat_refresh');
-        }
+      try {
+        await ensureRefreshed();
+        return client(original);
+      } catch {
+        await handleAuthFailureRedirect();
+        return Promise.reject(error);
       }
     }
-    return Promise.reject(error);
-  }
-);
+  );
+}
+
+attachAuthRefreshInterceptor(authApi);
+attachAuthRefreshInterceptor(nextAuthApi);
 
 export interface MeProfile {
   id: string;
@@ -53,8 +154,12 @@ export interface MeProfile {
   is_verified_senior: boolean;
 }
 
-/** Founding Editor profile (one-to-one with user): campus, LinkedIn, year joined. */
+/** Verified NIAT profile details: campus, LinkedIn, year joined. */
 export interface FoundingEditorProfile {
+  student_id_number?: string;
+  bio?: string;
+  id_card_file?: string | null;
+  profile_picture?: string | null;
   linkedin_profile: string;
   campus_id: string | null;
   campus_name: string;
@@ -62,9 +167,9 @@ export interface FoundingEditorProfile {
 }
 
 export async function fetchMe(): Promise<MeProfile | null> {
-  if (!localStorage.getItem('niat_access')) return null;
   try {
-    const { data } = await authApi.get<MeProfile>('/auth/me/');
+    await ensureRefreshed().catch(() => {});
+    const { data } = await nextAuthApi.get<MeProfile>('/api/auth/account-me', { skipAuthRetry: true });
     return data;
   } catch {
     return null;
@@ -72,22 +177,21 @@ export async function fetchMe(): Promise<MeProfile | null> {
 }
 
 export async function updateMeProfile(payload: Partial<Pick<MeProfile, 'username' | 'email'>>): Promise<MeProfile> {
-  const { data } = await authApi.patch<MeProfile>('/auth/me/', payload);
+  const { data } = await nextAuthApi.patch<MeProfile>('/api/proxy/auth/me', payload);
   return data;
 }
 
-/** Get Founding Editor profile (college details). 403 if user is not founding_editor. */
+/** Get verified NIAT profile (college details). 403 if role lacks access. */
 export async function fetchFoundingEditorProfile(): Promise<FoundingEditorProfile | null> {
-  if (!localStorage.getItem('niat_access')) return null;
   try {
-    const { data } = await authApi.get<FoundingEditorProfile>('/auth/me/profile/');
+    const { data } = await nextAuthApi.get<FoundingEditorProfile>('/api/auth/profile');
     return data;
   } catch {
     return null;
   }
 }
 
-/** True if Founding Editor profile has required onboarding fields (campus, LinkedIn, year joined). */
+/** True if verified NIAT profile has required fields (campus, LinkedIn, year joined). */
 export function isOnboardingComplete(profile: FoundingEditorProfile | null): boolean {
   if (!profile) return false;
   return (
@@ -97,11 +201,26 @@ export function isOnboardingComplete(profile: FoundingEditorProfile | null): boo
   );
 }
 
-/** Update Founding Editor profile (college details). */
+/** Update verified NIAT profile (college details). */
 export async function updateFoundingEditorProfile(
-  payload: Partial<FoundingEditorProfile>
+  payload: Partial<FoundingEditorProfile> | FormData
 ): Promise<FoundingEditorProfile> {
-  const { data } = await authApi.patch<FoundingEditorProfile>('/auth/me/profile/', payload);
+  const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+  const { data } = await nextAuthApi.patch<FoundingEditorProfile>(
+    '/api/proxy/auth/profile',
+    payload,
+    isFormData
+      ? { headers: { 'Content-Type': 'multipart/form-data' } }
+      : undefined
+  );
+  return data;
+}
+
+export async function completeOnboarding(): Promise<{ is_onboarded: boolean }> {
+  const { data } = await nextAuthApi.post<{ is_onboarded: boolean }>(
+    '/api/proxy/auth/onboarding/complete',
+    {}
+  );
   return data;
 }
 
@@ -126,8 +245,8 @@ export async function verifyOtpByPhone(phone: string, code: string): Promise<{ v
 export async function loginByPhoneOtp(
   phone: string,
   code: string
-): Promise<{ access: string; refresh: string }> {
-  const { data } = await api.post<{ access: string; refresh: string }>('/auth/login/phone/', {
+): Promise<{ access: string }> {
+  const { data } = await api.post<{ access: string }>('/auth/login/phone/', {
     phone,
     code,
   });
@@ -138,19 +257,18 @@ export async function loginByPhoneOtp(
 export async function loginByPhonePassword(
   phone: string,
   password: string
-): Promise<{ access: string; refresh: string }> {
-  const { data } = await api.post<{ access: string; refresh: string }>('/auth/login/phone-password/', {
+): Promise<{ access: string }> {
+  const { data } = await nextAuthApi.post<{ access: string }>('/api/auth/login', {
     phone: phone.trim(),
     password,
   });
   return data;
 }
 
-/** Register (NIAT Insider: source=niatverse → role founding_editor). */
+/** Register (NIAT Insider: source=niatverse → role niat_student). */
 export async function registerNiatverse(payload: {
   username: string;
   phone: string;
-  email?: string;
   password: string;
 }): Promise<{ id: string; username: string; email: string; phone: string }> {
   const { data } = await api.post<{ id: string; username: string; email: string; phone: string }>(
@@ -164,11 +282,8 @@ export async function registerNiatverse(payload: {
 export async function loginByUsernamePassword(
   username: string,
   password: string
-): Promise<{ access: string; refresh: string }> {
-  const { data } = await axios.post<{ access: string; refresh: string }>(`${API_BASE}/api/token/`, {
-    username,
-    password,
-  });
+): Promise<{ access: string }> {
+  const { data } = await api.post<{ access: string }>('/token/', { username, password });
   return data;
 }
 
@@ -196,24 +311,28 @@ export async function resetPasswordWithOtp(payload: {
 }
 
 export async function checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
-  const { data } = await authApi.get<{ available: boolean }>('/auth/username-available/', {
+  const { data } = await nextAuthApi.get<{ available: boolean }>('/api/auth/username-available', {
     params: { username: username.trim() },
   });
   return data;
 }
 
 export async function requestChangePhoneOtp(phone_number: string): Promise<{ detail: string }> {
-  const { data } = await authApi.post<{ detail: string }>('/auth/change-phone/request-otp/', {
-    phone_number: phone_number.trim(),
-  });
+  const { data } = await nextAuthApi.post<{ detail: string }>(
+    '/api/proxy/auth/change-phone/request-otp',
+    { phone_number: phone_number.trim() }
+  );
   return data;
 }
 
 export async function confirmChangePhone(phone_number: string, code: string): Promise<{ detail: string }> {
-  const { data } = await authApi.post<{ detail: string }>('/auth/change-phone/confirm/', {
-    phone_number: phone_number.trim(),
-    code: code.trim(),
-  });
+  const { data } = await nextAuthApi.post<{ detail: string }>(
+    '/api/proxy/auth/change-phone/confirm',
+    {
+      phone_number: phone_number.trim(),
+      code: code.trim(),
+    }
+  );
   return data;
 }
 
@@ -221,20 +340,18 @@ export async function changePassword(payload: {
   current_password: string;
   new_password: string;
 }): Promise<{ detail: string }> {
-  const { data } = await authApi.post<{ detail: string }>('/auth/change-password/', payload);
+  const { data } = await nextAuthApi.post<{ detail: string }>(
+    '/api/proxy/auth/change-password',
+    payload
+  );
   return data;
 }
 
-export function setTokens(access: string, refresh: string): void {
-  localStorage.setItem('niat_access', access);
-  document.cookie = `niat_access=${access}; path=/; max-age=86400`;
-  localStorage.setItem('niat_refresh', refresh);
-}
-
-export function clearTokens(): void {
-  localStorage.removeItem('niat_access');
-  document.cookie = 'niat_access=; path=/; max-age=0';
-  document.cookie = 'niat_onboarded=; path=/; max-age=0';
-  document.cookie = 'niat_needs_onboarding=; path=/; max-age=0';
-  localStorage.removeItem('niat_refresh');
+export async function logout(): Promise<void> {
+  try {
+    await nextAuthApi.post('/api/auth/logout', {});
+  } finally {
+    authFailureHandled = false;
+    await useAuthStore.getState().clearAuth({ callLogout: false });
+  }
 }

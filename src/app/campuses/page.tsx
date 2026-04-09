@@ -7,6 +7,7 @@ import CampusesPageClient from './CampusesPageClient';
 export default async function CampusDirectoryPage() {
   const campusesRes = await fetch(`${API_BASE}/api/campuses/`, {
     next: { revalidate: 86400 },
+    credentials: 'include',
   });
   if (!campusesRes.ok) {
     notFound();

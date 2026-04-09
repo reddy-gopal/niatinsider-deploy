@@ -9,9 +9,9 @@ import Footer from '../components/Footer';
 import CampusCard from '../components/CampusCard';
 import VideoCarousel from '../components/VideoCarousel';
 import AskMeAnythingSpotlight from '../components/AskMeAnythingSpotlight';
-import { fetchFoundingEditorProfile, type FoundingEditorProfile } from '../lib/authApi';
 import type { Campus } from '../types';
 import type { ApiArticle } from '../types/articleApi';
+import { AUTH_ROLES, useAuthStore } from '@/store/authStore';
 
 const HOME_CAMPUS_PREVIEW_COUNT = 6;
 const HERO_SLOGAN_TERMS = ['Campus Life', 'Onboarding Kit', 'Clubs', 'Hackathons', 'Internships'];
@@ -35,56 +35,17 @@ type Props = {
 
 export default function HomePageClient({ campuses, latestArticles, featuredArticles }: Props) {
   const campusPreview = useMemo(() => campuses.slice(0, HOME_CAMPUS_PREVIEW_COUNT), [campuses]);
+  const role = useAuthStore((state) => state.role);
   const [heroSearch, setHeroSearch] = useState('');
   const [sloganTermIndex, setSloganTermIndex] = useState(0);
   const [showSloganTerm, setShowSloganTerm] = useState(true);
   const [showNavSearch, setShowNavSearch] = useState(false);
-  const [hasToken, setHasToken] = useState(false);
-  const [profile, setProfile] = useState<FoundingEditorProfile | null>(null);
+  const myCampusId = useAuthStore((state) => state.campusId);
   const sloganSwapTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
 
   void latestArticles;
   void featuredArticles;
-
-  useEffect(() => {
-    const token = !!localStorage.getItem('niat_access');
-    setHasToken(token);
-    if (token) {
-      fetchFoundingEditorProfile().then(setProfile);
-    } else {
-      setProfile(null);
-    }
-    const onAuth = () => {
-      const t = !!localStorage.getItem('niat_access');
-      setHasToken(t);
-      if (t) fetchFoundingEditorProfile().then(setProfile);
-      else setProfile(null);
-    };
-    window.addEventListener('niat:auth', onAuth);
-    return () => window.removeEventListener('niat:auth', onAuth);
-  }, []);
-
-  useEffect(() => {
-    let ticking = false;
-    let last = false;
-    const handleScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const threshold = window.innerWidth < 768 ? 400 : 500;
-        const next = window.scrollY > threshold;
-        if (next !== last) {
-          last = next;
-          setShowNavSearch(next);
-        }
-        ticking = false;
-      });
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +71,27 @@ export default function HomePageClient({ campuses, latestArticles, featuredArtic
         window.clearTimeout(sloganSwapTimeoutRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    let ticking = false;
+    let last = false;
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const threshold = window.innerWidth < 768 ? 400 : 500;
+        const next = window.scrollY > threshold;
+        if (next !== last) {
+          last = next;
+          setShowNavSearch(next);
+        }
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -178,17 +160,22 @@ export default function HomePageClient({ campuses, latestArticles, featuredArtic
         </div>
       </section>
 
-      {hasToken && profile?.campus_id != null && (
+      {(role === AUTH_ROLES.niat || role === AUTH_ROLES.verifiedNiat) && myCampusId != null && (
         <section className="bg-section py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {(() => {
-              const campus = campuses.find((c) => String(c.id) === String(profile.campus_id));
+              const campus = campuses.find((c) => String(c.id) === String(myCampusId));
               const campusName = campus ? `${campus.name}, ${campus.city}` : 'My campus';
               return (
                 <div className="bg-white rounded-lg shadow-card border-l-4 border-[#991b1b] p-6">
                   <p className="text-sm text-black mb-1">Welcome back</p>
-                  <h2 className="font-display text-xl font-bold text-black mb-4">{campusName}</h2>
-                  <Link href={campus ? `/campus/${campus.slug}` : '/campuses'} className="inline-flex items-center text-[#991b1b] font-medium hover:underline">
+                  <h2 className="font-display text-xl font-bold text-black mb-4">
+                    {campusName}
+                  </h2>
+                  <Link
+                    href={campus ? `/${campus.slug}` : '/campuses'}
+                    className="inline-flex items-center text-[#991b1b] font-medium hover:underline"
+                  >
                     Go to my campus <ChevronRight className="h-4 w-4 ml-1" />
                   </Link>
                 </div>

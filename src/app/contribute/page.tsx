@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
   FileText, Utensils, Briefcase, MapPin,
   Bold, Italic, Heading1, Heading2, List, Link as LinkIcon
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WriteArticleCTA from '@/components/WriteArticleCTA';
 import { useCampuses } from '@/hooks/useCampuses';
 
 export default function Contribute() {
@@ -60,15 +60,19 @@ export default function Contribute() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {contributionTypes.map(({ id, label, icon: Icon, description }) =>
               id === 'article' ? (
-                <Link
+                <WriteArticleCTA
                   key={id}
-                  href="/contribute/write"
+                  label={
+                    <>
+                      <Icon className="h-8 w-8 mb-3 text-[#991b1b]" />
+                      <h3 className="font-bold text-sm mb-1">{label}</h3>
+                      <p className="text-xs text-black">{description}</p>
+                    </>
+                  }
                   className="p-4 rounded-lg text-left transition-all block bg-section text-black hover:shadow-soft hover:bg-[#fbf2f3]"
-                >
-                  <Icon className="h-8 w-8 mb-3 text-[#991b1b]" />
-                  <h3 className="font-bold text-sm mb-1">{label}</h3>
-                  <p className="text-xs text-black">{description}</p>
-                </Link>
+                  disabledClassName="cursor-not-allowed opacity-60"
+                  subtitleClassName="mt-2 text-xs text-[#64748b]"
+                />
               ) : (
                 <button
                   key={id}

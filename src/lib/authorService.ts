@@ -1,6 +1,7 @@
-import axios from 'axios';
-import { API_BASE } from './apiBase';
+import { authApi } from './authApi';
 import type { ApiArticle } from '@/types/articleApi';
+
+type AuthorBadge = { type: string; awarded_at: string } | null;
 
 export interface ApiAuthorProfile {
   id: string;
@@ -13,6 +14,7 @@ export interface ApiAuthorProfile {
   campus_id: string | null;
   campus_name: string;
   year_joined: number | null;
+  badge?: AuthorBadge;
 }
 
 export interface AuthorArticlesResponse {
@@ -25,10 +27,7 @@ export interface AuthorArticlesResponse {
 
 export const authorService = {
   getByUsername(username: string, params?: { page?: number; page_size?: number }) {
-    return axios.get<AuthorArticlesResponse>(
-      `${API_BASE}/api/authors/${encodeURIComponent(username)}/`,
-      { params }
-    );
+    return authApi.get<AuthorArticlesResponse>(`/authors/${encodeURIComponent(username)}/`, { params });
   },
 };
 

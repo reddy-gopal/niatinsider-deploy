@@ -24,7 +24,7 @@ import Footer from '@/components/Footer';
 import { useCampuses } from '@/hooks/useCampuses';
 import { useClubs } from '@/hooks/useClubs';
 import { articleService, type ApiCategory } from '@/lib/articleService';
-import { fetchFoundingEditorProfile, fetchMe } from '@/lib/authApi';
+import { useAuthStore } from '@/store/authStore';
 const STYLE_OPTIONS = [
   { value: 'p', label: 'Normal text' },
   { value: 'h1', label: 'Heading 1' },
@@ -190,6 +190,8 @@ function WriteArticleClientContent() {
   const prefillCategoryParam = searchParams.get('category');
   const prefillSubcategoryParam = searchParams.get('subcategory');
   const router = useRouter();
+  const storeUsername = useAuthStore((state) => state.user?.username ?? '');
+  const storeCampusId = useAuthStore((state) => state.campusId);
 
   useEffect(() => {
     setIsMounted(true);
@@ -224,8 +226,8 @@ function WriteArticleClientContent() {
   }, []);
 
   useEffect(() => {
-    fetchMe().then((me) => setUsername(me?.username ?? ''));
-  }, []);
+    setUsername(storeUsername);
+  }, [storeUsername]);
 
   useEffect(() => {
     const slug = categoryId != null ? categories.find((c: ApiCategory) => c.id === categoryId)?.slug : '';
@@ -251,7 +253,7 @@ function WriteArticleClientContent() {
     if (!id) return;
     setLoadEditError(null);
     articleService
-      .detail(id)
+      .editDetail(id)
       .then((res: { data: import('@/types/articleApi').ApiArticle }) => {
         const a = res.data;
         setEditId(a.id);
@@ -277,7 +279,18 @@ function WriteArticleClientContent() {
           bodyRef.current.innerHTML = bodyWithoutCards || BODY_PLACEHOLDER_HTML;
         }
       })
-      .catch(() => setLoadEditError('Failed to load article for editing.'));
+      .catch((error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          router.replace('/login');
+          return;
+        }
+        if (status === 404) {
+          router.replace('/404');
+          return;
+        }
+        setLoadEditError('Failed to load article for editing.');
+      });
   }, [editParam]);
 
   // Restore draft from localStorage when not editing an existing article
@@ -304,13 +317,13 @@ function WriteArticleClientContent() {
     }
   }, [editParam]);
 
-  // Auto-select campus from Founding Editor profile when writing a new article (only if no draft restored)
+  // Auto-select campus from auth store when writing a new article (only if no draft restored)
   useEffect(() => {
     if (editParam != null && editParam !== '') return;
-    fetchFoundingEditorProfile().then((p) => {
-      if (p?.campus_id != null) setCampusId((prev) => (prev === '' ? String(p.campus_id) : prev));
-    });
-  }, [editParam]);
+    if (storeCampusId != null) {
+      setCampusId((prev) => (prev === '' ? String(storeCampusId) : prev));
+    }
+  }, [editParam, storeCampusId]);
 
   // Allow pre-filling section/subcategory/campus from deep links (e.g. club detail CTA).
   useEffect(() => {
@@ -488,11 +501,6 @@ function WriteArticleClientContent() {
       }
       if (errors.subcategoryOther) addToast(`Please specify the ${subcategoryLabel.toLowerCase()} name.`, 'validation');
       if (errors.campus) addToast('Please select a campus.', 'validation');
-      return;
-    }
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('niat_access') : null;
-    if (!token) {
-      setSubmitError('Please log in to submit an article.');
       return;
     }
     setSubmitLoading(true);
@@ -1276,7 +1284,7 @@ function WriteArticleClientContent() {
             <div className="flex flex-col gap-3">
               {submittedArticleKey != null && (
                 <Link
-                  href={submittedCampusSlug != null ? `/campus/${submittedCampusSlug}/article/${submittedArticleKey}` : `/article/${submittedArticleKey}`}
+                  href={submittedCampusSlug != null ? `/${submittedCampusSlug}/article/${submittedArticleKey}?preview=1` : `/article/${submittedArticleKey}?preview=1`}
                   className="inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#991b1b] text-white font-medium hover:bg-[#b91c1c] transition-colors"
                   onClick={() => setShowSuccessModal(false)}
                 >

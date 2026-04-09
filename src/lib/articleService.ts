@@ -8,6 +8,7 @@ import type {
   SuggestionPayload,
   UpvoteStatus,
 } from '../types/articleApi';
+import { nextAuthApi } from './authApi';
 
 export interface ApiCategory {
   id: string;
@@ -42,45 +43,46 @@ export const articleService = {
   detail(id: string | number) {
     return articlesApi.get<ApiArticle>(`articles/${id}/`);
   },
+  preview(id: string | number) {
+    return nextAuthApi.get<ApiArticle>(`/api/proxy/articles/articles/${id}/preview`);
+  },
+  editDetail(id: string | number) {
+    return nextAuthApi.get<ApiArticle>(`/api/proxy/articles/articles/${id}/edit`);
+  },
   getUpvoteStatus(articleId: string | number) {
-    return articlesApi.get<UpvoteStatus>(`articles/${articleId}/upvote-status/`);
+    return nextAuthApi.get<UpvoteStatus>(`/api/proxy/articles/articles/${articleId}/upvote-status`);
   },
   toggleUpvote(articleId: string | number) {
-    return articlesApi.post<{ upvote_count: number; upvoted: boolean }>(`articles/${articleId}/upvote/`);
+    return nextAuthApi.post<{ upvote_count: number; upvoted: boolean }>(`/api/proxy/articles/articles/${articleId}/upvote`, {});
   },
   submitSuggestion(articleId: string | number, payload: SuggestionPayload) {
-    return articlesApi.post<{ success: boolean }>(`articles/${articleId}/suggest/`, payload);
+    return nextAuthApi.post<{ success: boolean }>(`/api/proxy/articles/articles/${articleId}/suggest`, payload);
   },
   incrementView(articleId: string | number) {
     return articlesApi.post<{ ok: boolean }>(`articles/${articleId}/view/`);
   },
   /** Creates article with status pending_review when save_as_draft is false. */
   create(payload: ArticleWritePayload) {
-    return articlesApi.post<ApiArticle>('articles/', payload);
+    return nextAuthApi.post<ApiArticle>('/api/articles/articles', payload);
   },
   update(id: string | number, payload: ArticleUpdatePayload) {
-    return articlesApi.patch<ApiArticle>(`articles/${id}/`, payload);
+    return nextAuthApi.patch<ApiArticle>(`/api/articles/articles/${id}`, payload);
   },
   delete(id: string | number) {
-    return articlesApi.delete(`articles/${id}/`);
+    return nextAuthApi.delete(`/api/proxy/articles/articles/${id}`);
   },
   myArticles() {
-    return articlesApi.get<PaginatedResponse<ApiArticle>>('articles/my_articles/');
+    return nextAuthApi.get<PaginatedResponse<ApiArticle>>('/api/proxy/articles/articles/my-articles');
   },
   pendingQueue() {
-    return articlesApi.get<PaginatedResponse<ApiArticle>>('articles/pending/');
+    return nextAuthApi.get<PaginatedResponse<ApiArticle>>('/api/proxy/articles/articles/pending');
   },
   moderate(id: string | number, payload: ModerationPayload) {
-    return articlesApi.post<ApiArticle>(`articles/${id}/moderate/`, payload);
+    return nextAuthApi.post<ApiArticle>(`/api/proxy/articles/articles/${id}/moderate`, payload);
   },
   uploadImage(file: File) {
     const formData = new FormData();
     formData.append('image', file);
-    return articlesApi.post<{ url: string }>('upload_image/', formData, {
-      transformRequest: [(data, headers) => {
-        if (headers && typeof headers === 'object' && 'Content-Type' in headers) delete headers['Content-Type'];
-        return data;
-      }],
-    });
+    return nextAuthApi.post<{ url: string }>('/api/articles/upload_image', formData);
   },
 };

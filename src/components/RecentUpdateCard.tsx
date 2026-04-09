@@ -17,7 +17,7 @@ interface RecentUpdateCardProps {
 export default function RecentUpdateCard({ article, campusSlug }: RecentUpdateCardProps) {
   const articleKey = article.slug || article.id;
   const href = article.campus_id
-    ? `/campus/${campusSlug}/article/${articleKey}`
+    ? `/${campusSlug}/article/${articleKey}`
     : `/article/${articleKey}`;
 
   return (

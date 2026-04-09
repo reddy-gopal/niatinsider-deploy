@@ -1,10 +1,5 @@
-import { Suspense } from 'react';
-import OnboardingClient from './OnboardingClient';
+import { redirect } from "next/navigation";
 
-export default function OnboardingPage() {
-  return (
-    <Suspense fallback={null}>
-      <OnboardingClient />
-    </Suspense>
-  );
+export default function OnboardingIndexPage() {
+  redirect("/onboarding/role");
 }

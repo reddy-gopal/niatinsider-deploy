@@ -41,6 +41,7 @@ export default function CampusesPageClient({ campuses }: Props) {
                 <button
                   key={state.name}
                   onClick={() => setActiveState(state.name)}
+                  suppressHydrationWarning
                   className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                     activeState === state.name
                       ? 'bg-[#991b1b] text-white'

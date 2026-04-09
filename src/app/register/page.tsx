@@ -4,15 +4,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
 import {
   requestOtpByPhone,
   verifyOtpByPhone,
   registerNiatverse,
   loginByUsernamePassword,
-  setTokens,
 } from '@/lib/authApi';
+import { useAuthStore } from '@/store/authStore';
+import { Spinner } from '@/components/ui/spinner';
 
 function getErrorMessage(err: unknown): string {
   if (err && typeof err === 'object' && 'response' in err) {
@@ -20,7 +21,7 @@ function getErrorMessage(err: unknown): string {
     const d = res?.data;
     if (d && typeof d === 'object') {
       if (typeof d.detail === 'string' && d.detail.trim()) return d.detail.trim();
-      for (const key of ['username', 'phone', 'email', 'password']) {
+      for (const key of ['username', 'phone', 'password']) {
         const v = d[key];
         if (typeof v === 'string' && v.trim()) return v.trim();
         if (Array.isArray(v) && v[0] && typeof v[0] === 'string') return String(v[0]).trim();
@@ -34,7 +35,6 @@ export default function Register() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -104,15 +104,12 @@ export default function Register() {
       await registerNiatverse({
         username: username.trim(),
         phone: phone.trim(),
-        email: email.trim() || undefined,
         password,
       });
-      const { access, refresh } = await loginByUsernamePassword(username.trim(), password);
-      setTokens(access, refresh);
-      document.cookie = 'niat_needs_onboarding=true; path=/; max-age=31536000';
-      document.cookie = 'niat_onboarded=; path=/; max-age=0';
+      await loginByUsernamePassword(username.trim(), password);
+      await useAuthStore.getState().bootstrapAuth({ force: true });
       window.dispatchEvent(new Event('niat:auth'));
-      router.replace('/onboarding');
+      router.replace('/onboarding/role');
     } catch (e) {
       setSubmitError(getErrorMessage(e));
     } finally {
@@ -122,17 +119,17 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <Navbar />
+      <PublicNavbar />
       <main className="max-w-md mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full min-w-0">
         <div
           className="rounded-2xl border border-[rgba(30,41,59,0.1)] p-5 sm:p-8 shadow-sm"
           style={{ backgroundColor: '#fff8eb' }}
         >
           <h1 className="font-playfair text-2xl font-bold text-[#1e293b] mb-6">
-            Register — Founding Editor
+            Register — NIAT Student
           </h1>
           <p className="text-sm text-[#64748b] mb-6">
-            Create an account with your mobile number. You’ll be registered as a Founding Editor on NIAT Insider.
+            Create an account with your mobile number and start as a NIAT Student on NIAT Insider.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -200,7 +197,7 @@ export default function Register() {
                     disabled={!isPhoneValid || otpSending || otpSent}
                     className="shrink-0 rounded-xl border border-[#991b1b] bg-[#991b1b] px-3 py-2 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {otpSending ? 'Sending…' : otpSent ? 'Sent' : 'Send OTP'}
+                    {otpSending ? <Spinner size="sm" className="border-white/30 border-t-white" /> : otpSent ? 'Sent' : 'Send OTP'}
                   </button>
                 )}
               </div>
@@ -229,25 +226,10 @@ export default function Register() {
                     disabled={otpCode.replace(/\D/g, '').length !== 4 || otpVerifying}
                     className="rounded-xl bg-[#991b1b] px-4 py-2 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50"
                   >
-                    {otpVerifying ? 'Verifying…' : 'Verify OTP'}
+                    {otpVerifying ? <Spinner size="sm" className="border-white/30 border-t-white" /> : 'Verify OTP'}
                   </button>
                 </div>
               )}
-            </div>
-
-            <div>
-              <label htmlFor="reg-email" className="block text-sm font-medium text-[#1e293b] mb-1.5">
-                Email <span className="text-[#64748b] font-normal">(optional)</span>
-              </label>
-              <input
-                id="reg-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                className="w-full rounded-xl border border-[rgba(30,41,59,0.15)] bg-white px-3 py-2 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
-                placeholder="you@example.com"
-              />
             </div>
 
             <div>
@@ -309,9 +291,8 @@ export default function Register() {
               className="w-full rounded-xl bg-[#991b1b] py-3 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="animate-spin rounded-full border-2 border-white/40 border-t-white size-4 shrink-0" role="status" aria-label="Creating account" />
-                  Creating account…
+                <span className="inline-flex items-center justify-center">
+                  <Spinner size="sm" className="border-white/30 border-t-white" />
                 </span>
               ) : phoneVerified ? (
                 'Register'

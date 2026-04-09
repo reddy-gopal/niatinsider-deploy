@@ -18,12 +18,15 @@ export default async function ArticlesPage() {
   const [articlesRes, categoriesRes, campusesRes] = await Promise.all([
     fetch(`${API_BASE}/api/articles/articles/?status=published&page_size=12`, {
       next: { revalidate: 3600 },
+      credentials: 'include',
     }),
     fetch(`${API_BASE}/api/articles/categories/`, {
       next: { revalidate: 86400 },
+      credentials: 'include',
     }),
     fetch(`${API_BASE}/api/campuses/`, {
       next: { revalidate: 86400 },
+      credentials: 'include',
     }),
   ]);
 

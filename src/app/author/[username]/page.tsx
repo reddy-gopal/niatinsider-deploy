@@ -25,9 +25,11 @@ export default async function AuthorPage({ params }: PageProps) {
   const [authorRes, articlesRes] = await Promise.all([
     fetch(`${API_BASE}/api/authors/${encodeURIComponent(decodedUsername)}/`, {
       cache: 'force-cache',
+      credentials: 'include',
     }),
     fetch(`${API_BASE}/api/articles/articles/?status=published&author_username=${encodeURIComponent(decodedUsername)}&page_size=12`, {
       next: { revalidate: 3600 },
+      credentials: 'include',
     }),
   ]);
 

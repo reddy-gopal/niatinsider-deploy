@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PenLine } from 'lucide-react';
+import { BarChart3, CheckCircle2, Clock3, PenLine, ShieldAlert } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WriteArticleCTA from '@/components/WriteArticleCTA';
 import { useCampuses } from '@/hooks/useCampuses';
-import { fetchMe } from '@/lib/authApi';
 import { useMyArticles } from '@/hooks/useArticles';
 import type { ArticleStatus } from '@/types/articleApi';
+import { AUTH_ROLES, useAuthStore } from '@/store/authStore';
 
 const STATUS_STYLE: Record<ArticleStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',
@@ -24,19 +25,28 @@ export default function MyArticles() {
   const { articles, loading, error, refetch } = useMyArticles();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { campuses: apiCampuses } = useCampuses();
+  const user = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.role);
+  const niatStatus = useAuthStore((state) => state.niatStatus);
+  const authChecked = useAuthStore((state) => state.authChecked);
+  const canWrite =
+    role !== AUTH_ROLES.niat || niatStatus === 'approved';
   const getCampusSlug = (id: string | number) =>
     apiCampuses.find((c) => String(c.id) === String(id))?.slug ?? String(id);
+  const getArticleHref = (article: { campus_id: string | null; slug: string; status: ArticleStatus }) => {
+    const basePath = article.campus_id ? `/${getCampusSlug(article.campus_id)}/article/${article.slug}` : `/article/${article.slug}`;
+    return article.status === 'published' ? basePath : `${basePath}?preview=1`;
+  };
 
   useEffect(() => {
-    fetchMe().then((profile) => {
-      if (profile) {
-        setAllowed(true);
-      } else {
-        setAllowed(false);
-        router.replace('/');
-      }
-    });
-  }, [router]);
+    if (!authChecked) return;
+    if (user && role !== 'intermediate_student') {
+      setAllowed(true);
+    } else {
+      setAllowed(false);
+      router.replace('/');
+    }
+  }, [authChecked, user, role, router]);
 
   if (allowed === null || !allowed) {
     return null;
@@ -61,14 +71,78 @@ export default function MyArticles() {
             </div>
           ) : articles.length === 0 ? (
             <div className="py-8">
-              <p className="text-[#64748b] mb-4">You haven’t submitted any articles yet.</p>
-              <Link
-                href="/contribute/write"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#991b1b] px-4 py-2 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
-              >
-                <PenLine className="h-4 w-4" />
-                Write your first article
-              </Link>
+              <div className="rounded-2xl border border-[rgba(153,27,27,0.15)] bg-gradient-to-br from-[#fff7f7] to-white p-5 sm:p-6 mb-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="rounded-lg bg-[#991b1b]/10 p-2">
+                    <BarChart3 className="h-5 w-5 text-[#991b1b]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1e293b]">No articles yet</h2>
+                    <p className="text-sm text-[#64748b]">
+                      Start your first story and track review progress from this dashboard.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-[rgba(30,41,59,0.1)] bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-[#64748b]">Submitted</p>
+                    <p className="mt-1 text-2xl font-bold text-[#1e293b]">0</p>
+                  </div>
+                  <div className="rounded-xl border border-[rgba(30,41,59,0.1)] bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-[#64748b]">Review stage</p>
+                    <p className="mt-1 text-sm font-semibold text-amber-700">Ready to submit</p>
+                  </div>
+                  <div className="rounded-xl border border-[rgba(30,41,59,0.1)] bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-[#64748b]">Publish rate</p>
+                    <p className="mt-1 text-2xl font-bold text-[#1e293b]">--</p>
+                  </div>
+                </div>
+
+                {role === AUTH_ROLES.niat && niatStatus !== 'approved' && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-start gap-2">
+                    <ShieldAlert className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+                    <p className="text-sm text-amber-800">
+                      Your profile is under review. Writing will unlock after verification.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-3 bg-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <PenLine className="h-4 w-4 text-[#991b1b]" />
+                    <p className="text-sm font-semibold text-[#1e293b]">Step 1</p>
+                  </div>
+                  <p className="text-sm text-[#64748b]">Write your campus story with clear title and images.</p>
+                </div>
+                <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-3 bg-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock3 className="h-4 w-4 text-amber-600" />
+                    <p className="text-sm font-semibold text-[#1e293b]">Step 2</p>
+                  </div>
+                  <p className="text-sm text-[#64748b]">Track review status here after submission.</p>
+                </div>
+                <div className="rounded-xl border border-[rgba(30,41,59,0.1)] p-3 bg-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <p className="text-sm font-semibold text-[#1e293b]">Step 3</p>
+                  </div>
+                  <p className="text-sm text-[#64748b]">Published articles appear with live performance stats.</p>
+                </div>
+              </div>
+
+              {canWrite && (
+                <>
+                  <p className="text-[#64748b] mb-4">You haven’t submitted any articles yet.</p>
+                  <WriteArticleCTA
+                    label="Write your first article"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#991b1b] px-4 py-2 text-sm font-medium text-white hover:bg-[#7f1d1d] transition-colors"
+                    icon={<PenLine className="h-4 w-4" />}
+                  />
+                </>
+              )}
             </div>
           ) : (
             <ul className="space-y-4">
@@ -76,7 +150,7 @@ export default function MyArticles() {
                 <li key={a.id} className="p-4 rounded-xl border border-[rgba(30,41,59,0.1)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Link
-                      href={a.campus_id ? `/campus/${getCampusSlug(a.campus_id)}/article/${a.slug}` : `/article/${a.slug}`}
+                      href={getArticleHref(a)}
                       className="font-medium text-[#991b1b] hover:underline"
                     >
                       {a.title}

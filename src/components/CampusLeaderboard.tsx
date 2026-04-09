@@ -65,8 +65,8 @@ function LeaderboardSkeleton() {
 }
 
 export default function CampusLeaderboard({ campusSlug, className }: CampusLeaderboardProps) {
-  const params = useParams<{ slug?: string | string[] }>();
-  const routeSlug = params?.slug;
+  const params = useParams<{ slug?: string | string[]; campusSlug?: string | string[] }>();
+  const routeSlug = params?.campusSlug ?? params?.slug;
   const resolvedSlug = useMemo(() => {
     if (campusSlug) return campusSlug;
     if (Array.isArray(routeSlug)) return routeSlug[0] ?? '';

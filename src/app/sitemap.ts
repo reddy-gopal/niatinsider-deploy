@@ -42,13 +42,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const campusRes = await fetch(`${API_BASE}/api/campuses/`, {
-      next: { revalidate: 86400 }
+      next: { revalidate: 86400 },
+      credentials: 'include',
     })
     if (campusRes.ok) {
       const data = await campusRes.json()
       const campuses: CampusApi[] = data.results ?? data
       campusRoutes = campuses.map((c) => ({
-        url: `${BASE_URL}/campus/${c.slug}`,
+        url: `${BASE_URL}/${c.slug}`,
         lastModified: safeDate(c.updated_at),
         priority: 0.9,
         changeFrequency: 'weekly' as const,
@@ -62,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const articles: ArticleApi[] = []
     let nextUrl: string | null = `${API_BASE}/api/articles/articles/?status=published&page_size=100`
     while (nextUrl) {
-      const articleRes: Response = await fetch(nextUrl, { next: { revalidate: 3600 } })
+      const articleRes: Response = await fetch(nextUrl, { next: { revalidate: 3600 }, credentials: 'include' })
       if (!articleRes.ok) break
       const data: { results?: ArticleApi[]; next?: string | null } | ArticleApi[] = await articleRes.json()
       const batch: ArticleApi[] = Array.isArray(data) ? data : (data.results ?? [])
@@ -72,11 +73,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     articleRoutes = articles
       .filter((a) => Boolean(a.slug))
       .map((a) => {
-        const isGlobal = a.is_global_guide || !a.campus_id || !a.campus_slug
+        const isGlobal = a.is_global_guide === true && (!a.campus_id || !a.campus_slug)
         return {
           url: isGlobal
             ? `${BASE_URL}/article/${a.slug}`
-            : `${BASE_URL}/campus/${a.campus_slug}/article/${a.slug}`,
+            : `${BASE_URL}/${a.campus_slug}/article/${a.slug}`,
           lastModified: safeDate(a.updated_at),
           priority: 0.8,
           changeFrequency: 'monthly' as const,

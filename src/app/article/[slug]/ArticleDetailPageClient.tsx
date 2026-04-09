@@ -7,26 +7,14 @@ import { ChevronRight, ChevronLeft, Clock, Pencil, Trash2, MoreVertical, ThumbsU
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { ArticleSuggestionForm } from '@/components/ArticleSuggestionForm';
 import { ArticleStructuredData } from '@/components/ArticleStructuredData';
 import { CATEGORY_CONFIG } from '@/data/articleCategories';
 import { useUpvote } from '@/hooks/useUpvote';
 import { articleService } from '@/lib/articleService';
-import { fetchMe } from '@/lib/authApi';
+import { useAuthStore } from '@/store/authStore';
 import type { ApiArticle } from '@/types/articleApi';
-
-/** Remove article-image-card blocks so images are shown only in the carousel (no duplication). */
-function stripImageCardsFromHtml(html: string): string {
-  if (!html || typeof html !== 'string') return '';
-  if (typeof document === 'undefined') return html;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  const cards = div.querySelectorAll('.article-image-card');
-  cards.forEach((el) => el.remove());
-  return div.innerHTML.trim();
-}
 
 function resolveAuthorLinkedIn(article: unknown): string | null {
   if (!article || typeof article !== 'object') return null;
@@ -42,18 +30,17 @@ function resolveAuthorLinkedIn(article: unknown): string | null {
 
 type Props = {
   article: ApiArticle;
-  relatedArticles: ApiArticle[];
-  latestArticles: ApiArticle[];
+  previewMessage?: string;
 };
 
-export default function ArticleDetailPageClient({ article, relatedArticles, latestArticles }: Props) {
+export default function ArticleDetailPageClient({ article, previewMessage }: Props) {
   const authorLinkedIn = useMemo(() => resolveAuthorLinkedIn(article), [article]);
   const articleIdForEngagement = article.id;
   const { upvoteCount, upvoted, toggle } = useUpvote(articleIdForEngagement);
   const [viewIncremented, setViewIncremented] = useState(false);
   const displayViewCount = (article.view_count ?? 0) + (viewIncremented ? 1 : 0);
   const categoryConfig = CATEGORY_CONFIG[article.category as keyof typeof CATEGORY_CONFIG];
-  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const currentUsername = useAuthStore((state) => state.user?.username ?? null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -63,24 +50,6 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
 
   const articleImages = article?.images?.length ? article.images : article.cover_image ? [article.cover_image] : [];
   const hasMultipleImages = articleImages.length > 1;
-
-  const mergedRelated = useMemo(() => {
-    const seen = new Set<string>([article.slug]);
-    const merged: ApiArticle[] = [];
-    for (const item of relatedArticles) {
-      if (!item?.slug || seen.has(item.slug)) continue;
-      seen.add(item.slug);
-      merged.push(item);
-      if (merged.length >= 3) return merged;
-    }
-    for (const item of latestArticles) {
-      if (!item?.slug || seen.has(item.slug)) continue;
-      seen.add(item.slug);
-      merged.push(item);
-      if (merged.length >= 3) break;
-    }
-    return merged;
-  }, [article.slug, relatedArticles, latestArticles]);
 
   useEffect(() => {
     const key = `viewed_article_${articleIdForEngagement}`;
@@ -104,10 +73,6 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
   }, [optionsOpen]);
 
   useEffect(() => {
-    fetchMe().then((me) => setCurrentUsername(me?.username ?? null));
-  }, []);
-
-  useEffect(() => {
     setCarouselIndex(0);
   }, [article.slug]);
 
@@ -125,10 +90,8 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
       .finally(() => setDeleteLoading(false));
   };
 
-  const relatedCtaLabel = article.campus_name ? `See all ${article.campus_name} articles \u2192` : 'See all articles \u2192';
-
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <>
       <ArticleStructuredData
         title={article.title}
         description={article.excerpt}
@@ -161,6 +124,12 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
           )}
           <span className="text-black truncate max-w-xs">{article.title}</span>
         </nav>
+
+        {previewMessage && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+            {previewMessage}
+          </div>
+        )}
 
         <div className="flex gap-2 mb-4">
           <span
@@ -242,9 +211,12 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
         )}
 
         {article.body ? (
-          <div className="article-body-read-only"><article className="prose prose-lg max-w-none mb-8" dangerouslySetInnerHTML={{ __html: stripImageCardsFromHtml(article.body) }} /></div>
+          <div
+            className="article-body-read-only prose prose-lg max-w-none mb-8"
+            dangerouslySetInnerHTML={{ __html: article.body }}
+          />
         ) : (
-          <article className="prose prose-lg max-w-none mb-8"><p className="text-black leading-relaxed">{article.excerpt}</p></article>
+          <div className="article-body-read-only prose prose-lg max-w-none mb-8"><p className="text-black leading-relaxed">{article.excerpt}</p></div>
         )}
         <div className="text-sm text-black mb-6 pb-6 border-t border-[rgba(30,41,59,0.1)] pt-6 space-y-3">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -266,38 +238,6 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
           {currentUsername != null && <button type="button" onClick={toggle} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${upvoted ? 'bg-[#991b1b] border-[#991b1b] text-white' : 'border-[#991b1b] text-[#991b1b] hover:bg-[#fbf2f3]'}`}><ThumbsUp className="h-4 w-4" />{upvoted ? 'Upvoted' : 'Upvote'}</button>}
           {currentUsername != null && <ArticleSuggestionForm articleId={articleIdForEngagement} onSubmit={(payload) => articleService.submitSuggestion(articleIdForEngagement, payload).then(() => undefined)} />}
         </div>
-        {mergedRelated.length > 0 && (
-          <section className="mb-8">
-            <h2 className="font-display text-xl md:text-2xl font-bold text-[#1e293b] mb-4">More from NIAT Insider</h2>
-            <div className="divide-y divide-[rgba(30,41,59,0.08)]">
-              {mergedRelated.map((related) => (
-                <Link key={related.id} href={`/article/${related.slug}`} className="group flex gap-4 py-4 border-l-[3px] border-l-transparent pl-3 transition-all duration-150 ease-out hover:border-l-[#991b1b]">
-                  {related.cover_image && (
-                    <div className="w-24 h-24 md:w-32 md:h-24 shrink-0 rounded-xl overflow-hidden hidden sm:block">
-                      <ImageWithFallback src={related.cover_image} alt={related.title} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-display text-[18px] md:text-[20px] leading-snug font-bold text-[#1e293b] mb-1 line-clamp-2 group-hover:text-[#991b1b]">
-                      {related.title}
-                    </h3>
-                    <p className="text-[15px] leading-relaxed text-[#334155] line-clamp-2 mb-2">
-                      {related.excerpt}
-                    </p>
-                    <p className="text-[13px] text-[#64748b]">
-                      {related.campus_name || 'Global'} · Updated {related.updated_days} days ago
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-6 text-center">
-              <Link href="/articles" className="inline-flex items-center gap-1 text-[#991b1b] font-medium text-sm hover:underline">
-                {relatedCtaLabel}
-              </Link>
-            </div>
-          </section>
-        )}
         {deleteConfirmOpen && (
           <>
             <div className="fixed inset-0 bg-black/50 z-50" onClick={() => !deleteLoading && setDeleteConfirmOpen(false)} aria-hidden />
@@ -314,7 +254,6 @@ export default function ArticleDetailPageClient({ article, relatedArticles, late
           </>
         )}
       </div>
-      <Footer />
-    </div>
+    </>
   );
 }

@@ -7,12 +7,14 @@ import { ChevronDown, PenLine } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import WriteArticleCTA from '@/components/WriteArticleCTA';
 import { useCampuses } from '@/hooks/useCampuses';
 import { useCategories } from '@/hooks/useCategories';
 import { usePublishedArticles } from '@/hooks/useArticles';
 import { getCategoryConfig } from '@/data/articleCategories';
 import type { ArticlePageArticle } from '@/types';
 import type { ApiArticle } from '@/types/articleApi';
+import { Spinner } from '@/components/ui/spinner';
 
 function ArticleRow({
   article,
@@ -25,7 +27,7 @@ function ArticleRow({
 }) {
   const config = getCategoryConfig(article.category);
   const articleUrl = article.campusId != null && article.campusId !== ''
-    ? `/campus/${getCampusSlug(article.campusId)}/article/${article.slug}`
+    ? `/${getCampusSlug(article.campusId)}/article/${article.slug}`
     : `/article/${article.slug}`;
 
   return (
@@ -265,8 +267,7 @@ export default function ArticlesClient() {
 
             {articlesLoading ? (
               <div className="py-12 flex items-center justify-center gap-2 text-[#64748b]">
-                <span className="animate-spin rounded-full border-2 border-[#991b1b]/30 border-t-[#991b1b] size-6" aria-hidden />
-                Loading articles...
+                <Spinner />
               </div>
             ) : articlesError && !isNetworkError ? (
               <div className="py-12 text-center">
@@ -316,7 +317,7 @@ export default function ArticlesClient() {
                 <ul className="space-y-3">
                   {topArticles.map((a: ArticlePageArticle) => {
                     const url = a.campusId != null && a.campusId !== ''
-                      ? `/campus/${getCampusSlug(a.campusId)}/article/${a.slug}`
+                      ? `/${getCampusSlug(a.campusId)}/article/${a.slug}`
                       : `/article/${a.slug}`;
                     return (
                       <li key={a.id}>
@@ -339,7 +340,7 @@ export default function ArticlesClient() {
                   {apiCampuses.map((c) => (
                     <li key={c.id}>
                       <Link
-                        href={`/campus/${c.slug}`}
+                        href={`/${c.slug}`}
                         className="block text-sm text-[#1e293b] hover:text-[#991b1b] hover:underline"
                       >
                         {c.name}
@@ -357,13 +358,11 @@ export default function ArticlesClient() {
                 <p className="text-sm text-[#64748b] mb-3">
                   Can&apos;t find what you need? Write it.
                 </p>
-                <Link
-                  href="/contribute/write"
+                <WriteArticleCTA
+                  label="Start Writing"
                   className="inline-flex items-center gap-2 bg-[#991b1b] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#b91c1c] transition-colors"
-                >
-                  <PenLine className="h-4 w-4" />
-                  Start Writing
-                </Link>
+                  icon={<PenLine className="h-4 w-4" />}
+                />
               </div>
             </div>
           </aside>

@@ -24,7 +24,7 @@ export function CampusStructuredData({
     '@type': 'CollegeOrUniversity',
     name: name,
     description: description ?? undefined,
-    url: `${BASE_URL}/campus/${slug}`,
+    url: `${BASE_URL}/${slug}`,
     image: imageUrl ?? undefined,
     address: {
       '@type': 'PostalAddress',
@@ -32,7 +32,7 @@ export function CampusStructuredData({
       addressRegion: state,
       addressCountry: 'IN',
     },
-    sameAs: `${BASE_URL}/campus/${slug}`,
+    sameAs: `${BASE_URL}/${slug}`,
   }
 
   return (

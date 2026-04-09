@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search, Menu, X, ChevronRight, PenLine, UserCircle, LogOut } from 'lucide-react';
-import { clearTokens, fetchFoundingEditorProfile, isOnboardingComplete } from '../lib/authApi';
+import { logout } from '../lib/authApi';
 import { useCampuses } from '../hooks/useCampuses';
 import { useCategories } from '../hooks/useCategories';
 import { usePublishedArticles } from '../hooks/useArticles';
 import { getCategoryConfig } from '../data/articleCategories';
 import type { ApiArticle } from '../types/articleApi';
+import WriteArticleCTA from './WriteArticleCTA';
+import { AUTH_ROLES, WRITE_ENABLED_ROLES, useAuthStore } from '@/store/authStore';
+import { isProtectedAppPath } from '@/lib/protectedPaths';
+import { Spinner } from '@/components/ui/spinner';
 
 interface NavbarProps {
   searchQuery?: string;
@@ -23,9 +27,6 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [articlesDropdownOpen, setArticlesDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [hasToken, setHasToken] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -33,43 +34,42 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
   const { campuses: apiCampuses } = useCampuses();
   const { categories: apiCategories } = useCategories();
   const getCampusSlug = (campusId: string) => apiCampuses.find((c) => String(c.id) === campusId)?.slug ?? campusId;
-  const showFullNav = hasToken && onboardingComplete;
+  const user = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.role);
+  const niatStatus = useAuthStore((state) => state.niatStatus);
+  const studentUsesFullNav = role === AUTH_ROLES.niat || role === AUTH_ROLES.intermediate;
+  const hideWriteCtaForRole = role === AUTH_ROLES.niat || role === AUTH_ROLES.intermediate;
+  const hideMyArticlesForRole = role === AUTH_ROLES.intermediate;
+  const isAuthenticated = Boolean(user);
+  const authChecked = useAuthStore((state) => state.authChecked);
+  const isOnboarded = useAuthStore((state) => state.isOnboarded);
+  const onboardingComplete = Boolean(isOnboarded);
+  const showFullNav = isAuthenticated && (onboardingComplete || studentUsesFullNav);
+  const onProtectedRoute = isProtectedAppPath(pathname);
+  /** Middleware guarantees a session on these routes; avoid flashing guest links while bootstrap runs. */
+  const showGuestNavLinks = !isAuthenticated && (!onProtectedRoute || authChecked);
 
   const { articles: publishedArticles, loading: recentArticlesLoading } = usePublishedArticles(
     { page_size: 12, ordering: 'updated_at' },
     { enabled: showFullNav && articlesDropdownOpen }
   );
 
-  useEffect(() => {
-    const update = () => {
-      const token = !!localStorage.getItem('niat_access');
-      setHasToken(token);
-    };
-    update();
-    window.addEventListener('niat:auth', update);
-    return () => window.removeEventListener('niat:auth', update);
-  }, []);
-
-  useEffect(() => {
-    if (!hasToken) {
-      setOnboardingComplete(false);
-      setIsLoadingProfile(false);
-      return;
-    }
-
-    setIsLoadingProfile(true);
-    fetchFoundingEditorProfile()
-      .then((profile) => {
-        setOnboardingComplete(isOnboardingComplete(profile));
-      })
-      .catch(() => setOnboardingComplete(false))
-      .finally(() => setIsLoadingProfile(false));
-  }, [hasToken]);
-
-  const isHome = pathname === '/';
+  /** Hero pages that include a large in-page search; hide duplicate navbar search until scrolled. */
+  const isHomeWithHeroSearch = pathname === '/home' || pathname === '/';
   const isOnArticles = pathname === '/articles';
-  const shouldShowSearch = showFullNav && (!isHome || showSearch === true);
-  const shouldShowNavShadow = isHome && showSearch === true;
+  const shouldShowSearch = showFullNav && (!isHomeWithHeroSearch || showSearch === true);
+  const shouldShowNavShadow = isHomeWithHeroSearch && showSearch === true;
+  const topBannerMessage = !authChecked
+    ? null
+    : role === AUTH_ROLES.niat
+      ? (niatStatus === 'pending'
+        ? "Your profile is under review. We'll notify you once a moderator verifies it."
+        : null)
+      : role === AUTH_ROLES.intermediate
+        ? null
+        : WRITE_ENABLED_ROLES.includes(role as typeof WRITE_ENABLED_ROLES[number])
+          ? 'Submit your article. It gets reviewed, then goes live for the whole community. Be the first to publish.'
+          : null;
 
   const recentlyUpdated = (publishedArticles as ApiArticle[])
     .slice(0, 12)
@@ -103,8 +103,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
   }, [articlesDropdownOpen, profileDropdownOpen]);
 
   const handleLogout = () => {
-    clearTokens();
-    window.dispatchEvent(new Event('niat:auth'));
+    void logout();
     setProfileDropdownOpen(false);
     setMobileMenuOpen(false);
     router.push('/');
@@ -112,14 +111,15 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* In-progress banner — above Navbar */}
-      <div
-        className="bg-[#991b1b] text-white text-center text-xs sm:text-sm font-medium py-2 px-3 sm:px-4"
-        role="status"
-        aria-live="polite"
-      >
-        Submit your article. It gets reviewed, then goes live for the whole community. Be the first to publish.
-      </div>
+      {topBannerMessage && (
+        <div
+          className="bg-[#991b1b] text-white text-center text-xs sm:text-sm font-medium py-2 px-3 sm:px-4"
+          role="status"
+          aria-live="polite"
+        >
+          {topBannerMessage}
+        </div>
+      )}
       <nav
         className={`bg-navbar border-b border-[rgba(30,41,59,0.1)] transition-[box-shadow] duration-300 ease-out ${shouldShowNavShadow ? 'shadow-[0_2px_12px_rgba(30,41,59,0.10)]' : ''
           }`}
@@ -127,7 +127,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-1.5 shrink-0">
+            <Link href={isAuthenticated || onProtectedRoute ? '/home' : '/'} className="flex items-center gap-1.5 shrink-0">
               <img
                 src="/niat.svg"
                 alt="NIAT"
@@ -140,7 +140,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
             <form
               onSubmit={handleSearch}
               className={`hidden md:flex mx-8 transition-[opacity,transform,width] duration-[250ms] ease-out ${shouldShowSearch
-                ? `opacity-100 translate-y-0 flex-1 min-w-0 overflow-visible ${isHome ? 'max-w-[280px]' : 'max-w-md'}`
+                ? `opacity-100 translate-y-0 flex-1 min-w-0 overflow-visible ${isHomeWithHeroSearch ? 'max-w-[280px]' : 'max-w-md'}`
                 : 'opacity-0 -translate-y-1.5 w-0 min-w-0 flex-none overflow-hidden pointer-events-none'
                 }`}
             >
@@ -159,15 +159,10 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center flex-wrap justify-end gap-2 lg:gap-4">
-              {isLoadingProfile ? (
-                <div className="flex space-x-2 animate-pulse mb-1">
-                  <div className="h-5 bg-gray-200 rounded w-28"></div>
-                  <div className="h-5 bg-gray-200 rounded w-16"></div>
-                </div>
-              ) : hasToken && !onboardingComplete && (
+              {isAuthenticated && !onboardingComplete && !studentUsesFullNav && (
                 <>
                   <Link
-                    href="/onboarding"
+                    href="/onboarding/role"
                     className="text-[#991b1b] hover:text-[#7f1d1d] text-sm font-medium transition-colors"
                   >
                     Complete profile
@@ -262,7 +257,9 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                               <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 rounded-lg -mx-1 px-1 scroll-smooth">
                                 <div className="space-y-1.5">
                                   {recentArticlesLoading && (
-                                    <p className="text-xs text-[#64748b] py-2 px-1">Loading recent articles...</p>
+                                    <div className="py-2 px-1">
+                                      <Spinner size="sm" />
+                                    </div>
                                   )}
                                   {!recentArticlesLoading && recentlyUpdated.length === 0 && (
                                     <p className="text-xs text-[#64748b] py-2 px-1">No recent articles yet.</p>
@@ -273,7 +270,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                                     const campusIdForUrl = a.campusId != null && a.campusId !== '' ? a.campusId : '';
                                     const articleKey = a.slug || a.id;
                                     const url = campusIdForUrl
-                                      ? `/campus/${getCampusSlug(campusIdForUrl)}/article/${articleKey}`
+                                      ? `/${getCampusSlug(campusIdForUrl)}/article/${articleKey}`
                                       : `/article/${articleKey}`;
                                     return (
                                       <Link
@@ -327,16 +324,19 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   </div>
 
                   <a
-                    href ="/talk-to-seniors"
+                    href="/talk-to-seniors"
                     className="text-black hover:text-black text-sm font-medium transition-colors"
                   >
                     Talk To Seniors
                   </a>
 
-                  <Link href="/contribute/write" className="btn-primary text-sm font-medium inline-flex items-center gap-1.5">
-                    <PenLine className="h-4 w-4" />
-                    Write Article
-                  </Link>
+                  {!hideWriteCtaForRole && (
+                    <WriteArticleCTA
+                      label="Write Article"
+                      className="btn-primary text-sm font-medium inline-flex items-center gap-1.5"
+                      icon={<PenLine className="h-4 w-4" />}
+                    />
+                  )}
                 </>
               )}
               {showFullNav && (
@@ -362,14 +362,16 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                         <UserCircle className="h-4 w-4" />
                         Profile
                       </Link>
-                      <Link
-                        href="/my-articles"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e293b] hover:bg-[#fbf2f3] transition-colors"
-                      >
-                        <PenLine className="h-4 w-4" />
-                        My Articles
-                      </Link>
+                      {!hideMyArticlesForRole && (
+                        <Link
+                          href="/my-articles"
+                          onClick={() => setProfileDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e293b] hover:bg-[#fbf2f3] transition-colors"
+                        >
+                          <PenLine className="h-4 w-4" />
+                          My Articles
+                        </Link>
+                      )}
                       <button
                         type="button"
                         onClick={handleLogout}
@@ -382,13 +384,13 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   )}
                 </div>
               )}
-              {!hasToken && (
+              {showGuestNavLinks && (
                 <>
+                  <Link href="/articles" className="text-black hover:text-black text-sm font-medium transition-colors">
+                    Articles
+                  </Link>
                   <Link href="/login" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Login
-                  </Link>
-                  <Link href="/register" className="text-black hover:text-black text-sm font-medium transition-colors">
-                    Register
                   </Link>
                 </>
               )}
@@ -398,6 +400,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-black"
+              suppressHydrationWarning
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -406,7 +409,7 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-[rgba(30,41,59,0.1)]">
-              {showFullNav && (
+              {shouldShowSearch && (
                 <form onSubmit={handleSearch} className="mb-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -416,22 +419,16 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       suppressHydrationWarning
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-[rgba(30,41,59,0.1)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-[rgba(30,41,59,0.1)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b] focus:border-transparent"
                     />
                   </div>
                 </form>
               )}
               <div className="flex flex-col space-y-3">
-                {isLoadingProfile ? (
-                  <div className="flex flex-col space-y-4 animate-pulse mt-2 py-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                  </div>
-                ) : hasToken && !onboardingComplete && (
+                {isAuthenticated && !onboardingComplete && !studentUsesFullNav && (
                   <>
                     <Link
-                      href="/onboarding"
+                      href="/onboarding/role"
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-[#991b1b] font-medium text-sm"
                     >
@@ -469,20 +466,23 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     >
                       Talk To Seniors
                     </a>
-                    <Link
-                      href="/contribute/write"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="btn-primary text-sm font-medium text-center inline-flex items-center justify-center gap-1.5"
-                    >
-                      <PenLine className="h-4 w-4" />
-                      Write Article
-                    </Link>
+                    {!hideWriteCtaForRole && (
+                      <div onClick={() => setMobileMenuOpen(false)}>
+                        <WriteArticleCTA
+                          label="Write Article"
+                          className="btn-primary text-sm font-medium text-center inline-flex items-center justify-center gap-1.5"
+                          icon={<PenLine className="h-4 w-4" />}
+                        />
+                      </div>
+                    )}
                     <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       Profile
                     </Link>
-                    <Link href="/my-articles" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
-                      My Articles
-                    </Link>
+                    {!hideMyArticlesForRole && (
+                      <Link href="/my-articles" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                        My Articles
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
@@ -492,13 +492,13 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     </button>
                   </>
                 )}
-                {!hasToken && (
+                {showGuestNavLinks && (
                   <>
+                    <Link href="/articles" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
+                      Articles
+                    </Link>
                     <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
                       Login
-                    </Link>
-                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-black hover:text-black text-sm font-medium">
-                      Register
                     </Link>
                   </>
                 )}

@@ -32,16 +32,17 @@ export function usePublishedArticles(
   const enabled = options?.enabled ?? true;
   const requestVersionRef = useRef(0);
 
-  const paramsKey = JSON.stringify(params ?? {});
+  const listParamsKey = JSON.stringify({ ...(params ?? {}), status: 'published' });
 
   const refetch = useCallback(() => {
     if (!enabled) {
       setLoading(false);
       return;
     }
+    const listParams = { ...(params ?? {}), status: 'published' as const };
     const currentRequestVersion = ++requestVersionRef.current;
     const now = Date.now();
-    const cachedList = articleListCache.get(paramsKey);
+    const cachedList = articleListCache.get(listParamsKey);
     if (cachedList && now - cachedList.timestamp < ARTICLE_LIST_CACHE_TTL_MS) {
       setArticles(cachedList.results);
       setNext(cachedList.next);
@@ -55,9 +56,9 @@ export function usePublishedArticles(
     setError(null);
     setIsNetworkError(false);
     const request =
-      articleListInFlight.get(paramsKey) ??
-      articleService.list(params);
-    articleListInFlight.set(paramsKey, request);
+      articleListInFlight.get(listParamsKey) ??
+      articleService.list(listParams);
+    articleListInFlight.set(listParamsKey, request);
 
     request
       .then((res: ListResponse) => {
@@ -65,7 +66,7 @@ export function usePublishedArticles(
         const data = res.data as PaginatedResponse<ApiArticle>;
         setArticles(data.results ?? []);
         setNext(data.next ?? null);
-        articleListCache.set(paramsKey, {
+        articleListCache.set(listParamsKey, {
           results: data.results ?? [],
           next: data.next ?? null,
           timestamp: Date.now(),
@@ -87,10 +88,10 @@ export function usePublishedArticles(
         }
       })
       .finally(() => {
-        articleListInFlight.delete(paramsKey);
+        articleListInFlight.delete(listParamsKey);
         if (currentRequestVersion === requestVersionRef.current) setLoading(false);
       });
-  }, [enabled, paramsKey]);
+  }, [enabled, listParamsKey]);
 
   const loadMore = useCallback(() => {
     if (!next || loadingMore) return;

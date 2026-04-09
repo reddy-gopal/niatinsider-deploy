@@ -23,6 +23,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const [campusesRes] = await Promise.all([
     fetch(`${API_BASE}/api/campuses/`, {
       next: { revalidate: 86400 },
+      credentials: 'include',
     }),
   ]);
 
@@ -38,7 +39,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     activeCampus
       ? fetch(
           `${API_BASE}/api/articles/articles/leaderboard/?campus_id=${encodeURIComponent(String(activeCampus.id))}`,
-          { next: { revalidate: 3600 } }
+          { next: { revalidate: 3600 }, credentials: 'include' }
         )
       : Promise.resolve(null),
   ]);

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { usePublishedArticles } from '../hooks/useArticles';
+import WriteArticleCTA from './WriteArticleCTA';
 
 const HOW_TO_GUIDES_URL = '/how-to-guides';
 
@@ -35,12 +36,12 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               >
                 Ask Seniors
               </a>
-              <Link
-                href="/contribute/write"
+              <WriteArticleCTA
+                label="Write Article"
                 className="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/10 transition-colors"
-              >
-                Write Article
-              </Link>
+                disabledClassName="cursor-not-allowed opacity-60"
+                subtitleClassName="mt-1 text-[11px] text-white/70"
+              />
             </div>
           </div>
         </div>

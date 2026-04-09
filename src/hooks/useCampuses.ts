@@ -1,14 +1,14 @@
 import useSWR from 'swr';
-import axios from 'axios';
 import type { CampusListItem } from '../types/campusApi';
-import { API_BASE } from '../lib/apiBase';
+import { authApi } from '../lib/authApi';
 
-const url = `${API_BASE}/api/campuses/`;
+const url = '/campuses/';
 
 async function fetcher(): Promise<CampusListItem[]> {
   try {
-    const res = await axios.get<CampusListItem[] | unknown>(url, {
+    const res = await authApi.get<CampusListItem[] | unknown>(url, {
       headers: { Accept: 'application/json' },
+      withCredentials: true,
     });
     const data = res.data;
     return Array.isArray(data) ? data : [];

@@ -9,6 +9,7 @@ import {
   verifyForgotPasswordOtp,
   resetPasswordWithOtp,
 } from "@/lib/authApi";
+import { Spinner } from "@/components/ui/spinner";
 
 function getErrorMessage(err: unknown): string {
   if (err && typeof err === "object" && "response" in err) {
@@ -155,7 +156,7 @@ export default function ForgotPasswordPage() {
                   disabled={!isPhoneValid || loading}
                   className="w-full rounded-xl bg-[#991b1b] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50"
                 >
-                  {loading ? "Sending OTP..." : "Send OTP"}
+                  {loading ? <span className="inline-flex justify-center"><Spinner size="sm" className="border-white/30 border-t-white" /></span> : "Send OTP"}
                 </button>
               ) : (
                 <div className="flex items-center justify-between rounded-xl border border-[rgba(30,41,59,0.12)] bg-[#fff8eb] px-3 py-2 text-xs text-[#64748b]">
@@ -200,7 +201,7 @@ export default function ForgotPasswordPage() {
                     disabled={code.trim().length !== OTP_LENGTH || loading}
                     className="mt-3 w-full rounded-xl border border-[#991b1b] text-[#991b1b] px-4 py-2.5 text-sm font-medium hover:bg-[#fbf2f3] disabled:opacity-50"
                   >
-                    {loading ? "Verifying..." : "Verify OTP"}
+                    {loading ? <span className="inline-flex justify-center"><Spinner size="sm" className="border-[#991b1b]/20" /></span> : "Verify OTP"}
                   </button>
                 </div>
               )}
@@ -247,7 +248,7 @@ export default function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#991b1b] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#b91c1c] disabled:opacity-50"
               >
-                {loading ? "Resetting..." : "Reset password"}
+                {loading ? <span className="inline-flex justify-center"><Spinner size="sm" className="border-white/30 border-t-white" /></span> : "Reset password"}
               </button>
             </form>
           )}

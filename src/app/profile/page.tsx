@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -20,27 +21,53 @@ import { useCampuses } from '@/hooks/useCampuses';
 import { CampusSelector } from '@/components/onboarding/CampusSelector';
 import type { CampusListItem } from '@/types/campusApi';
 import { Settings, X } from 'lucide-react';
+import FoundingEditorBadge from '@/components/FoundingEditorBadge';
+import { useAuthStore } from '@/store/authStore';
+import { getMyProfile, upsertIntermediateProfile, upsertNiatProfile } from '@/lib/api/profiles';
+import { API_BASE } from '@/lib/apiBase';
+import NiatBadgeModal from '@/components/NiatBadgeModal';
 
 const START_YEAR = 2024;
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: currentYear - START_YEAR + 1 }, (_, i) => START_YEAR + i);
+const INTERMEDIATE_BRANCH_OPTIONS = [
+  { value: 'MPC', label: 'MPC' },
+  { value: 'BIPC', label: 'BIPC' },
+  { value: 'OTHERS', label: 'Others' },
+] as const;
 
 const EMPTY_PROFILE: FoundingEditorProfile = {
+  student_id_number: '',
   linkedin_profile: '',
   campus_id: null,
   campus_name: '',
   year_joined: null,
 };
 
+type IntermediateProfileForm = {
+  college_name: string;
+  branch: 'MPC' | 'BIPC' | 'OTHERS' | '';
+  branch_other: string;
+};
+
+function resolveMediaUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return `${API_BASE}/${url}`;
+}
+
 export default function Profile() {
   const router = useRouter();
   const { campuses } = useCampuses();
+  const badge = useAuthStore((state) => state.badge);
   const [me, setMe] = useState<MeProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState<FoundingEditorProfile>(EMPTY_PROFILE);
   const [saved, setSaved] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'password' | 'username' | 'phone'>('password');
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -54,8 +81,25 @@ export default function Profile() {
   const [newPhoneNumber, setNewPhoneNumber] = useState('');
   const [phoneOtpCode, setPhoneOtpCode] = useState('');
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [campusLabel, setCampusLabel] = useState<string | null>(null);
+  const [intermediateForm, setIntermediateForm] = useState<IntermediateProfileForm>({
+    college_name: '',
+    branch: '',
+    branch_other: '',
+  });
+  const [intermediateLoading, setIntermediateLoading] = useState(false);
+  const [intermediateSaving, setIntermediateSaving] = useState(false);
+  const [intermediateSaved, setIntermediateSaved] = useState(false);
+  const [niatProfilePictureFile, setNiatProfilePictureFile] = useState<File | null>(null);
+  const [niatProfilePictureError, setNiatProfilePictureError] = useState<string | null>(null);
+  const [niatProfilePictureUrl, setNiatProfilePictureUrl] = useState<string | null>(null);
+  const [niatIdCardFile, setNiatIdCardFile] = useState<File | null>(null);
+  const [niatIdCardError, setNiatIdCardError] = useState<string | null>(null);
+  const [niatIdCardUrl, setNiatIdCardUrl] = useState<string | null>(null);
 
-  const isFoundingEditor = me?.role === 'founding_editor';
+  const isVerifiedNiatStudent = me?.role === 'verified_niat_student';
+  const isNiatStudent = me?.role === 'niat_student';
+  const isIntermediateStudent = me?.role === 'intermediate_student';
 
   useEffect(() => {
     fetchMe().then((user) => {
@@ -64,11 +108,56 @@ export default function Profile() {
         return;
       }
       setMe(user);
-      if (user.role === 'founding_editor') {
+      if (user.role === 'verified_niat_student') {
         fetchFoundingEditorProfile().then((p) => {
           setEditForm(p ?? EMPTY_PROFILE);
+          setCampusLabel(p?.campus_name || null);
+          setNiatProfilePictureUrl(resolveMediaUrl(p?.profile_picture));
+          setNiatIdCardUrl(resolveMediaUrl(p?.id_card_file));
           setProfileLoading(false);
         });
+      } else if (user.role === 'niat_student') {
+        getMyProfile()
+          .then((data) => {
+            const profile = data?.profile as {
+              student_id_number?: string | null;
+              campus?: { id?: string | number; name?: string } | null;
+              campus_name?: string | null;
+              linkedin_profile?: string | null;
+              id_card_file?: string | null;
+              profile_picture?: string | null;
+            } | null;
+            const campusId = profile?.campus?.id != null ? String(profile.campus.id) : null;
+            const campusName = profile?.campus?.name ?? profile?.campus_name ?? '';
+            setEditForm({
+              student_id_number: profile?.student_id_number ?? '',
+              linkedin_profile: profile?.linkedin_profile ?? '',
+              campus_id: campusId,
+              campus_name: campusName,
+              year_joined: null,
+            });
+            setCampusLabel(campusName || null);
+            setNiatIdCardUrl(resolveMediaUrl(profile?.id_card_file));
+            setNiatProfilePictureUrl(resolveMediaUrl(profile?.profile_picture));
+          })
+          .finally(() => setProfileLoading(false));
+      } else if (user.role === 'intermediate_student') {
+        setIntermediateLoading(true);
+        getMyProfile()
+          .then((data) => {
+            const profile = data?.profile as {
+              college_name?: string;
+              branch?: 'MPC' | 'BIPC' | 'OTHERS';
+              branch_other?: string;
+            } | null;
+            setIntermediateForm({
+              college_name: profile?.college_name ?? '',
+              branch: profile?.branch ?? '',
+              branch_other: profile?.branch_other ?? '',
+            });
+          })
+          .finally(() => setIntermediateLoading(false));
+        setProfileLoading(false);
       } else {
         setProfileLoading(false);
       }
@@ -77,19 +166,89 @@ export default function Profile() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFoundingEditor || saving) return;
+    if ((!isVerifiedNiatStudent && !isNiatStudent) || saving) return;
+    setNiatIdCardError(null);
+    setNiatProfilePictureError(null);
     setSaving(true);
     setSaved(false);
     try {
-      const payload = {
-        ...editForm,
-        campus_name:
-          editForm.campus_id != null
-            ? (campuses.find((c: CampusListItem) => String(c.id) === String(editForm.campus_id))?.name ?? '')
-            : '',
-      };
-      const updated = await updateFoundingEditorProfile(payload);
-      setEditForm(updated);
+      if (isVerifiedNiatStudent) {
+        if (niatProfilePictureFile && !niatProfilePictureFile.type.startsWith('image/')) {
+          setNiatProfilePictureError('Only image files are allowed for profile picture.');
+          return;
+        }
+        if (niatIdCardFile && !niatIdCardFile.type.startsWith('image/')) {
+          setNiatIdCardError('Only image files are allowed for ID card.');
+          return;
+        }
+        const payload = new FormData();
+        payload.append('student_id_number', editForm.student_id_number ?? '');
+        if (editForm.campus_id) {
+          payload.append('campus_id', String(editForm.campus_id));
+        } else {
+          payload.append('campus_id', '');
+        }
+        payload.append('linkedin_profile', editForm.linkedin_profile ?? '');
+        if (editForm.year_joined != null) {
+          payload.append('year_joined', String(editForm.year_joined));
+        }
+        if (niatIdCardFile) {
+          payload.append('id_card_file', niatIdCardFile);
+        }
+        if (niatProfilePictureFile) {
+          payload.append('profile_picture', niatProfilePictureFile);
+        }
+        const updated = await updateFoundingEditorProfile(payload);
+        setEditForm((prev) => ({ ...prev, ...updated }));
+        setCampusLabel(updated.campus_name || null);
+        setNiatIdCardUrl(resolveMediaUrl(updated.id_card_file) ?? niatIdCardUrl);
+        setNiatIdCardFile(null);
+        setNiatProfilePictureUrl(resolveMediaUrl(updated.profile_picture) ?? niatProfilePictureUrl);
+        setNiatProfilePictureFile(null);
+      } else {
+        if (niatProfilePictureFile && !niatProfilePictureFile.type.startsWith('image/')) {
+          setNiatProfilePictureError('Only image files are allowed for profile picture.');
+          return;
+        }
+        if (niatIdCardFile && !niatIdCardFile.type.startsWith('image/')) {
+          setNiatIdCardError('Only image files are allowed for ID card.');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('student_id_number', editForm.student_id_number ?? '');
+        if (editForm.campus_id) {
+          formData.append('campus', String(editForm.campus_id));
+        }
+        formData.append('linkedin_profile', editForm.linkedin_profile ?? '');
+        if (niatIdCardFile) {
+          formData.append('id_card_file', niatIdCardFile);
+        }
+        if (niatProfilePictureFile) {
+          formData.append('profile_picture', niatProfilePictureFile);
+        }
+        await upsertNiatProfile(formData);
+        const refreshed = await getMyProfile();
+        const refreshedProfile = refreshed?.profile as {
+          student_id_number?: string | null;
+          campus?: { id?: string | number; name?: string } | null;
+          campus_name?: string | null;
+          linkedin_profile?: string | null;
+          id_card_file?: string | null;
+          profile_picture?: string | null;
+        } | null;
+        setEditForm((prev) => ({
+          ...prev,
+          student_id_number: refreshedProfile?.student_id_number ?? prev.student_id_number,
+          campus_id: refreshedProfile?.campus?.id != null ? String(refreshedProfile.campus.id) : prev.campus_id,
+          campus_name: refreshedProfile?.campus?.name ?? refreshedProfile?.campus_name ?? prev.campus_name,
+          linkedin_profile: refreshedProfile?.linkedin_profile ?? prev.linkedin_profile,
+        }));
+        setCampusLabel(refreshedProfile?.campus?.name ?? refreshedProfile?.campus_name ?? campusLabel);
+        setNiatIdCardUrl(resolveMediaUrl(refreshedProfile?.id_card_file) ?? niatIdCardUrl);
+        setNiatIdCardFile(null);
+        setNiatProfilePictureUrl(resolveMediaUrl(refreshedProfile?.profile_picture) ?? niatProfilePictureUrl);
+        setNiatProfilePictureFile(null);
+      }
       setSaved(true);
     } finally {
       setSaving(false);
@@ -132,6 +291,29 @@ export default function Profile() {
       );
     } finally {
       setSettingsLoading(false);
+    }
+  };
+
+  const handleSaveIntermediate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isIntermediateStudent || intermediateSaving) return;
+    if (!intermediateForm.branch) return;
+    setIntermediateSaving(true);
+    setIntermediateSaved(false);
+    try {
+      const updated = await upsertIntermediateProfile({
+        college_name: intermediateForm.college_name.trim(),
+        branch: intermediateForm.branch as 'MPC' | 'BIPC' | 'OTHERS',
+        branch_other: intermediateForm.branch === 'OTHERS' ? intermediateForm.branch_other.trim() : '',
+      });
+      setIntermediateForm({
+        college_name: updated.college_name,
+        branch: updated.branch,
+        branch_other: updated.branch_other ?? '',
+      });
+      setIntermediateSaved(true);
+    } finally {
+      setIntermediateSaving(false);
     }
   };
 
@@ -246,7 +428,19 @@ export default function Profile() {
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="font-display text-2xl font-bold text-[#1e293b]">Profile</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-2xl font-bold text-[#1e293b]">Profile</h1>
+            <FoundingEditorBadge badge={badge} />
+            {isVerifiedNiatStudent && (
+              <button
+                type="button"
+                onClick={() => setShowBadgeModal(true)}
+                className="text-xs font-medium text-[#0a66c2] hover:underline bg-transparent border-none cursor-pointer"
+              >
+                Open share badge
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -280,10 +474,91 @@ export default function Profile() {
               <dt className="text-[#64748b]">Role</dt>
               <dd className="font-medium text-[#1e293b]">{me.role.replace('_', ' ')}</dd>
             </div>
+            {campusLabel && (
+              <div>
+                <dt className="text-[#64748b]">Campus</dt>
+                <dd className="font-medium text-[#1e293b]">{campusLabel}</dd>
+              </div>
+            )}
           </dl>
         </section>
 
-        {isFoundingEditor && (
+        {isIntermediateStudent && (
+          <section className="p-6 rounded-xl border border-[rgba(30,41,59,0.1)]">
+            <h2 className="font-display text-lg font-semibold text-[#1e293b] mb-4">Profile information</h2>
+            {intermediateLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full border-2 border-[#fbf2f3] size-10 border-t-[#991b1b]" role="status" aria-label="Loading" />
+              </div>
+            ) : (
+              <form onSubmit={handleSaveIntermediate} className="space-y-4">
+                <div>
+                  <label htmlFor="branch" className="block text-sm font-medium text-[#1e293b] mb-1">
+                    Branch
+                  </label>
+                  <select
+                    id="branch"
+                    value={intermediateForm.branch}
+                    onChange={(e) =>
+                      setIntermediateForm((f) => ({ ...f, branch: e.target.value as 'MPC' | 'BIPC' | 'OTHERS' | '' }))
+                    }
+                    className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    required
+                  >
+                    <option value="">Select branch</option>
+                    {INTERMEDIATE_BRANCH_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {intermediateForm.branch === 'OTHERS' && (
+                  <div>
+                    <label htmlFor="branch_other" className="block text-sm font-medium text-[#1e293b] mb-1">
+                      Other branch
+                    </label>
+                    <input
+                      id="branch_other"
+                      type="text"
+                      value={intermediateForm.branch_other}
+                      onChange={(e) => setIntermediateForm((f) => ({ ...f, branch_other: e.target.value }))}
+                      className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                      placeholder="Enter your branch"
+                      required
+                    />
+                  </div>
+                )}
+                <div>
+                  <label htmlFor="college_name" className="block text-sm font-medium text-[#1e293b] mb-1">
+                    College name
+                  </label>
+                  <input
+                    id="college_name"
+                    type="text"
+                    value={intermediateForm.college_name}
+                    onChange={(e) => setIntermediateForm((f) => ({ ...f, college_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    placeholder="Enter your college name"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={intermediateSaving}
+                    className="px-4 py-2 rounded-lg bg-[#991b1b] text-white text-sm font-medium hover:bg-[#7f1d1d] disabled:opacity-60"
+                  >
+                    {intermediateSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  {intermediateSaved && <span className="text-sm text-green-600">Saved.</span>}
+                </div>
+              </form>
+            )}
+          </section>
+        )}
+
+        {(isVerifiedNiatStudent || isNiatStudent) && (
           <section className="p-6 rounded-xl border border-[rgba(30,41,59,0.1)]">
             <h2 className="font-display text-lg font-semibold text-[#1e293b] mb-4">Profile details</h2>
             {profileLoading ? (
@@ -302,6 +577,19 @@ export default function Profile() {
                   />
                 </div>
                 <div>
+                  <label htmlFor="student_id_number" className="block text-sm font-medium text-[#1e293b] mb-1">
+                    Student ID number
+                  </label>
+                  <input
+                    id="student_id_number"
+                    type="text"
+                    value={editForm.student_id_number ?? ''}
+                    onChange={(e) => setEditForm((f) => ({ ...f, student_id_number: e.target.value }))}
+                    className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    placeholder="Enter your NIAT student ID"
+                  />
+                </div>
+                <div>
                   <label htmlFor="linkedin_profile" className="block text-sm font-medium text-[#1e293b] mb-1">
                     LinkedIn profile
                   </label>
@@ -314,22 +602,72 @@ export default function Profile() {
                     placeholder="https://linkedin.com/in/yourprofile"
                   />
                 </div>
-                <div>
-                  <label htmlFor="year_joined" className="block text-sm font-medium text-[#1e293b] mb-1">
-                    Year of joining
-                  </label>
-                  <select
-                    id="year_joined"
-                    value={editForm.year_joined ?? ''}
-                    onChange={(e) => setEditForm((f) => ({ ...f, year_joined: e.target.value ? parseInt(e.target.value, 10) : null }))}
-                    className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
-                  >
-                    <option value="">Select year</option>
-                    {YEAR_OPTIONS.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
+                {(isNiatStudent || isVerifiedNiatStudent) && (
+                  <div>
+                    <label htmlFor="niat_id_card" className="block text-sm font-medium text-[#1e293b] mb-1">
+                      ID card
+                    </label>
+                    {niatIdCardUrl && (
+                      <p className="mb-2 text-xs text-[#334155]">
+                        Current file: <a href={niatIdCardUrl} target="_blank" rel="noreferrer" className="text-[#0a66c2] hover:underline">View uploaded ID card</a>
+                      </p>
+                    )}
+                    <input
+                      id="niat_id_card"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNiatIdCardFile(e.target.files?.[0] ?? null)}
+                      className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    />
+                    {niatIdCardError && (
+                      <p className="mt-1 text-xs text-red-600">{niatIdCardError}</p>
+                    )}
+                  </div>
+                )}
+                {(isNiatStudent || isVerifiedNiatStudent) && (
+                  <div>
+                    <label htmlFor="niat_profile_picture" className="block text-sm font-medium text-[#1e293b] mb-1">
+                      Profile picture
+                    </label>
+                    {niatProfilePictureUrl && (
+                      <div className="mb-2">
+                        <img
+                          src={niatProfilePictureUrl}
+                          alt="Current profile"
+                          className="h-20 w-20 rounded-full object-cover border border-[rgba(30,41,59,0.2)]"
+                        />
+                      </div>
+                    )}
+                    <input
+                      id="niat_profile_picture"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNiatProfilePictureFile(e.target.files?.[0] ?? null)}
+                      className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    />
+                    {niatProfilePictureError && (
+                      <p className="mt-1 text-xs text-red-600">{niatProfilePictureError}</p>
+                    )}
+                  </div>
+                )}
+                {isVerifiedNiatStudent && (
+                  <div>
+                    <label htmlFor="year_joined" className="block text-sm font-medium text-[#1e293b] mb-1">
+                      Year of joining
+                    </label>
+                    <select
+                      id="year_joined"
+                      value={editForm.year_joined ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, year_joined: e.target.value ? parseInt(e.target.value, 10) : null }))}
+                      className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
+                    >
+                      <option value="">Select year</option>
+                      {YEAR_OPTIONS.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="submit"
@@ -417,6 +755,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      )}
+      {showBadgeModal && me && (
+        <NiatBadgeModal username={me.username} onClose={() => setShowBadgeModal(false)} />
       )}
       <Footer />
     </div>

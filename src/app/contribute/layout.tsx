@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import RequireOnboarding from '@/components/RequireOnboarding'
 
 export const metadata: Metadata = {
   title: 'Contribute',
@@ -16,5 +17,5 @@ export default function ContributeLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return <RequireOnboarding>{children}</RequireOnboarding>
 }

@@ -1,17 +1,19 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, PenLine } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import WriteArticleCTA from '@/components/WriteArticleCTA';
 import { getCategoryConfig } from '@/data/articleCategories';
 import type { ApiCategory } from '@/lib/articleService';
 import type { ArticlePageArticle } from '@/types';
 import type { ApiArticle } from '@/types/articleApi';
 import type { CampusListItem } from '@/types/campusApi';
+import { Spinner } from '@/components/ui/spinner';
 
 function ArticleRow({
   article,
@@ -24,7 +26,7 @@ function ArticleRow({
 }) {
   const config = getCategoryConfig(article.category);
   const articleUrl = article.campusId != null && article.campusId !== ''
-    ? `/campus/${getCampusSlug(article.campusId)}/article/${article.slug}`
+    ? `/${getCampusSlug(article.campusId)}/article/${article.slug}`
     : `/article/${article.slug}`;
 
   return (
@@ -92,6 +94,18 @@ type Props = {
   campuses: CampusListItem[];
 };
 
+function toSameOriginArticlesUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  if (raw.startsWith('/api/articles/articles')) return raw;
+  if (raw.startsWith('/')) return raw;
+  try {
+    const parsed = new URL(raw);
+    return `/api/articles/articles${parsed.search}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function ArticlesPageClient({ initialArticles, initialNext, categories, campuses }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -100,8 +114,10 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
   const campusParam = searchParams.get('campus');
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   const [allArticles, setAllArticles] = useState<ApiArticle[]>(initialArticles);
-  const [next, setNext] = useState<string | null>(initialNext);
+  const [next, setNext] = useState<string | null>(toSameOriginArticlesUrl(initialNext));
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
 
   const apiCategorySlugs = useMemo(() => new Set(categories.map((c) => c.slug)), [categories]);
   const activeCategory = categoryParam && apiCategorySlugs.has(categoryParam) ? categoryParam : null;
@@ -169,21 +185,54 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
   const totalCount = displayArticles.length;
   const campusCount = campuses.length;
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (!next || loadingMore) return;
     setLoadingMore(true);
+    setLoadMoreError(null);
     try {
-      const res = await fetch(next, { cache: 'no-store' });
-      if (!res.ok) return;
+      const safeNextUrl = toSameOriginArticlesUrl(next);
+      if (!safeNextUrl) {
+        setLoadMoreError('Pagination link is invalid. Please refresh the page.');
+        return;
+      }
+      const res = await fetch(safeNextUrl, { cache: 'no-store', credentials: 'include' });
+      if (!res.ok) {
+        setLoadMoreError('Failed to load more articles. Retrying may help.');
+        return;
+      }
       const data = (await res.json()) as { results?: ApiArticle[]; next?: string | null } | ApiArticle[];
       const newArticles = Array.isArray(data) ? data : (data.results ?? []);
-      const nextCursor = Array.isArray(data) ? null : (data.next ?? null);
-      setAllArticles((prev) => [...prev, ...newArticles]);
+      const nextCursor = Array.isArray(data) ? null : toSameOriginArticlesUrl(data.next ?? null);
+      setAllArticles((prev) => {
+        const seen = new Set(prev.map((a) => String(a.id)));
+        const dedupedIncoming = newArticles.filter((a) => !seen.has(String(a.id)));
+        return dedupedIncoming.length ? [...prev, ...dedupedIncoming] : prev;
+      });
       setNext(nextCursor);
+    } catch {
+      setLoadMoreError('Failed to load more articles. Check your connection and retry.');
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [next, loadingMore]);
+
+  useEffect(() => {
+    const node = loadMoreTriggerRef.current;
+    if (!node || !next) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !loadingMore) {
+          void loadMore();
+        }
+      },
+      { rootMargin: '300px 0px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [next, loadingMore, loadMore]);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -267,16 +316,34 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
               </div>
             )}
 
+            <div ref={loadMoreTriggerRef} className="h-1 w-full" aria-hidden />
             {next && (
-              <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[rgba(30,41,59,0.12)] px-4 py-2 text-sm font-medium text-[#1e293b] hover:bg-[#fbf2f3] disabled:opacity-60"
-                >
-                  {loadingMore ? 'Loading...' : 'Load more'}
-                </button>
+              <div className="pt-6 text-sm text-[#64748b]">
+                {loadingMore ? (
+                  <div className="inline-flex items-center gap-2">
+                    <Spinner size="sm" />
+                  </div>
+                ) : (
+                  'Scroll to load more articles'
+                )}
+              </div>
+            )}
+            {!next && allArticles.length > 0 && (
+              <div className="pt-6 text-sm text-[#64748b]">You&apos;ve reached the end.</div>
+            )}
+            {loadMoreError && (
+              <div className="pt-4">
+                <p className="text-sm text-red-600 mb-2">{loadMoreError}</p>
+                {next && (
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[rgba(30,41,59,0.12)] px-4 py-2 text-sm font-medium text-[#1e293b] hover:bg-[#fbf2f3] disabled:opacity-60"
+                  >
+                    {loadingMore ? <Spinner size="sm" className="border-[#1e293b]/20" /> : 'Retry'}
+                  </button>
+                )}
               </div>
             )}
           </main>
@@ -287,7 +354,7 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
                 <h3 className="font-display font-bold text-[#1e293b] mb-3">Top Articles This Week</h3>
                 <ul className="space-y-3">
                   {topArticles.map((a: ArticlePageArticle) => {
-                    const url = a.campusId != null && a.campusId !== '' ? `/campus/${getCampusSlug(a.campusId)}/article/${a.slug}` : `/article/${a.slug}`;
+                    const url = a.campusId != null && a.campusId !== '' ? `/${getCampusSlug(a.campusId)}/article/${a.slug}` : `/article/${a.slug}`;
                     return (
                       <li key={a.id}>
                         <Link href={url} className="block text-sm text-[#1e293b] hover:text-[#991b1b] hover:underline">
@@ -305,7 +372,7 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
                 <ul className="space-y-3">
                   {campuses.map((c) => (
                     <li key={c.id}>
-                      <Link href={`/campus/${c.slug}`} className="block text-sm text-[#1e293b] hover:text-[#991b1b] hover:underline">
+                      <Link href={`/${c.slug}`} className="block text-sm text-[#1e293b] hover:text-[#991b1b] hover:underline">
                         {c.name}
                       </Link>
                       <span className="text-xs text-[#64748b]">{campusArticleCounts.get(String(c.id)) ?? 0} articles</span>
@@ -317,10 +384,11 @@ export default function ArticlesPageClient({ initialArticles, initialNext, categ
               <div className="bg-white rounded-lg border border-[rgba(30,41,59,0.1)] p-4 shadow-[0_4px_12px_rgba(30,41,59,0.08)]">
                 <h3 className="font-display font-bold text-[#1e293b] mb-2">Missing Something?</h3>
                 <p className="text-sm text-[#64748b] mb-3">Can&apos;t find what you need? Write it.</p>
-                <Link href="/contribute/write" className="inline-flex items-center gap-2 bg-[#991b1b] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#b91c1c] transition-colors">
-                  <PenLine className="h-4 w-4" />
-                  Start Writing
-                </Link>
+                <WriteArticleCTA
+                  label="Start Writing"
+                  className="inline-flex items-center gap-2 bg-[#991b1b] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#b91c1c] transition-colors"
+                  icon={<PenLine className="h-4 w-4" />}
+                />
               </div>
             </div>
           </aside>

@@ -64,7 +64,7 @@ function buildDescription(article: Article): string {
 
 const fetchArticle = async (slug: string): Promise<Article | null> => {
   try {
-    const res = await fetch(`${API_BASE}/api/articles/articles/${slug}/`, { next: { revalidate: 60 } })
+    const res = await fetch(`${API_BASE}/api/articles/articles/${slug}/`, { next: { revalidate: 60 }, credentials: 'include' })
     if (!res.ok) return null
     return await res.json()
   } catch {
