@@ -10,6 +10,7 @@ function getBackendBaseUrl(): string {
 
 export async function POST(request: Request) {
   const response = NextResponse.json({ detail: 'logged out' });
+  // Both must be cleared — leaving refresh_token would keep hasInsiderSessionCookiePair true after "logout".
   response.cookies.set('access_token', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

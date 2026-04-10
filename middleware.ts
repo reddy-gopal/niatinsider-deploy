@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isProtectedAppPath } from '@/lib/protectedPaths';
+import { hasInsiderSessionCookiePair } from '@/lib/sessionCookie';
 
 const AMA_ORIGIN = 'https://niat-ama.vercel.app';
 
@@ -10,15 +11,13 @@ function isTalkToSeniorsPath(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const accessToken = request.cookies.get('access_token')?.value;
+  const refreshToken = request.cookies.get('refresh_token')?.value;
+  const hasSession = hasInsiderSessionCookiePair(accessToken, refreshToken);
 
-  // NOTE: Middleware only checks for access_token (not refresh_token).
-  // If access_token is expired but refresh_token is still valid, middleware
-  // treats the user as a guest here. The client-side AuthBootstrapper will
-  // run ensureRefreshed() and recover the session on load.
-  // Adding token refresh in middleware is possible but adds latency to every
-  // edge request — defer unless it becomes a real UX problem.
-  if (pathname === '/') {
-    if (accessToken) {
+  // Session = access_token and/or refresh_token (either may be missing/expired alone).
+  // Client-side refresh rotates access_token; edge does not call the backend here.
+  if (pathname === '/' || pathname === '') {
+    if (hasSession) {
       return NextResponse.redirect(new URL('/home', request.url));
     }
     return NextResponse.next(); // guests see public marketing page
@@ -57,7 +56,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isProtectedAppPath(pathname)) {
-    if (!accessToken) {
+    if (!hasSession) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('from', pathname);
       return NextResponse.redirect(loginUrl);

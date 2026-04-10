@@ -4,6 +4,12 @@ import type { CampusListItem } from '@/types/campusApi';
 import type { ApiArticle, PaginatedResponse } from '@/types/articleApi';
 import HomeClient from './HomeClient';
 
+/**
+ * RSC fetches to API_BASE do not forward the browser Cookie header unless we pass it explicitly.
+ * These endpoints are public; `credentials: 'include'` does not attach Insider cookies cross-origin
+ * from the server runtime. So "access expired, refresh valid" does not break this page — there is
+ * no server-side Bearer use here. If you add authenticated upstream calls, forward cookies or refresh first.
+ */
 export default async function HomeRoutePage() {
   const [campusesRes, latestArticlesRes, featuredArticlesRes] = await Promise.all([
     fetch(`${API_BASE}/api/campuses/`, { next: { revalidate: 86400 }, credentials: 'include' }),

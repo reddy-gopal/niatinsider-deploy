@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     const accessToken = typeof data?.access === 'string' ? data.access : (accessTokenFromCookies ?? null);
     const refreshToken = refreshTokenFromCookies ?? null;
 
+    // No `domain` set → host-only cookies for the response host (e.g. www.niatinsider.com).
+    // They are NOT sent to a different host (apex vs www, or another subdomain) unless
+    // you add an explicit domain (e.g. .niatinsider.com) — coordinate with deployment canonical URL.
     if (accessToken) {
       response.cookies.set('access_token', accessToken, {
         httpOnly: true,

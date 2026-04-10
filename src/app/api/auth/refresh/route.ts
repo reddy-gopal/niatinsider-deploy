@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     const accessToken = typeof data?.access === 'string' ? data.access : (accessTokenFromCookies ?? null);
     const rotatedRefreshToken = refreshTokenFromCookies ?? null;
 
+    // Host-only cookies — same notes as login/route.ts (www vs apex canonical host).
     if (accessToken) {
       response.cookies.set('access_token', accessToken, {
         httpOnly: true,
