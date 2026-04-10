@@ -1,3 +1,5 @@
+import { TALK_TO_SENIORS_URL } from '@/lib/talkToSeniorsUrl';
+
 export default function AskMeAnythingSpotlight() {
   const questions = [
     { emoji: "🗓️", text: "What's the first week like?" },
@@ -78,7 +80,7 @@ export default function AskMeAnythingSpotlight() {
           </p>
 
           <a
-            href="/talk-to-seniors"
+            href={TALK_TO_SENIORS_URL}
             className="group relative mt-6 inline-flex items-center gap-3 rounded-xl bg-[#991b1b] px-8 py-4 text-lg font-bold text-white shadow-[0_10px_30px_rgba(153,27,27,0.35)] transition-all duration-300 hover:bg-[#7f1d1d] hover:shadow-[0_14px_36px_rgba(153,27,27,0.45)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>Book Your Slot</span>

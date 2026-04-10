@@ -54,6 +54,14 @@ export interface AuthState {
 let logoutInFlight = false;
 let bootstrapInFlight: Promise<void> | null = null;
 
+function responseStatus(err: unknown): number | undefined {
+  return (err as { response?: { status?: number } })?.response?.status;
+}
+
+function isUnauthorizedStatus(status: number | undefined): boolean {
+  return status === 401 || status === 403;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   role: null,
@@ -95,14 +103,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     bootstrapInFlight = (async () => {
-      try {
-        // Access JWT is short-lived (e.g. 15m); refresh is HttpOnly. Refresh here so the
-        // following request does not 401 while skipAuthRetry is true (which would clear
-        // session without ever rotating the access cookie). Guests: refresh fails → ignored.
+      const snapshot = useAuthStore.getState();
+
+      async function loadMe(): Promise<ProfilesMeResponse> {
         await ensureRefreshed().catch(() => {});
         const { data } = await nextAuthApi.get<ProfilesMeResponse>('/api/auth/me', {
           skipAuthRetry: true,
         });
+        return data;
+      }
+
+      function applyMeResponse(data: ProfilesMeResponse) {
         const role = data?.role ?? null;
         const profile = data?.profile ?? null;
         const campusId =
@@ -135,9 +146,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           badge: data?.badge ?? null,
           authChecked: true,
         });
-      } catch (error: unknown) {
-        const status = (error as { response?: { status?: number } })?.response?.status;
-        void status;
+      }
+
+      function clearSession() {
         set({
           user: null,
           role: null,
@@ -145,6 +156,37 @@ export const useAuthStore = create<AuthState>((set) => ({
           niatStatus: null,
           campusId: null,
           badge: null,
+          authChecked: true,
+        });
+      }
+
+      try {
+        let data: ProfilesMeResponse;
+        try {
+          data = await loadMe();
+        } catch (firstErr: unknown) {
+          const s1 = responseStatus(firstErr);
+          if (isUnauthorizedStatus(s1)) {
+            clearSession();
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 400));
+          data = await loadMe();
+        }
+        applyMeResponse(data);
+      } catch (err: unknown) {
+        const status = responseStatus(err);
+        if (isUnauthorizedStatus(status)) {
+          clearSession();
+          return;
+        }
+        set({
+          user: snapshot.user,
+          role: snapshot.role,
+          isOnboarded: snapshot.isOnboarded,
+          niatStatus: snapshot.niatStatus,
+          campusId: snapshot.campusId,
+          badge: snapshot.badge,
           authChecked: true,
         });
       } finally {
@@ -155,4 +197,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     return bootstrapInFlight;
   },
 }));
-

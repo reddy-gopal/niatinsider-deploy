@@ -1,7 +1,9 @@
-/**
- * AMA “Talk to Seniors” lives on a separate app. Vercel rewrites `/talk-to-seniors` in production,
- * but local `next dev` has no rewrite — same-tab navigation to `/talk-to-seniors` was a 404 and
- * could desync the Insider SPA on back/forward.
- */
+// Production: same-origin `/talk-to-seniors` → Edge middleware proxies AMA and strips
+// Set-Cookie so Insider cookies are not clobbered (see middleware.ts).
+// Local dev: direct AMA URL (no local proxy); override anytime with NEXT_PUBLIC_TALK_TO_SENIORS_URL.
+
 export const TALK_TO_SENIORS_URL =
-  process.env.NEXT_PUBLIC_TALK_TO_SENIORS_URL ?? 'https://niat-ama.vercel.app/talk-to-seniors';
+  process.env.NEXT_PUBLIC_TALK_TO_SENIORS_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? '/talk-to-seniors'
+    : 'https://niat-ama.vercel.app/talk-to-seniors');

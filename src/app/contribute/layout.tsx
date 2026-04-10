@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import RequireOnboarding from '@/components/RequireOnboarding'
+import RequireSessionServer from '@/components/RequireSessionServer'
 
 export const metadata: Metadata = {
   title: 'Contribute',
@@ -17,5 +18,11 @@ export default function ContributeLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <RequireOnboarding>{children}</RequireOnboarding>
+  return (
+    <RequireSessionServer fallbackFrom="/contribute">
+      <RequireOnboarding>
+        {children}
+      </RequireOnboarding>
+    </RequireSessionServer>
+  )
 }

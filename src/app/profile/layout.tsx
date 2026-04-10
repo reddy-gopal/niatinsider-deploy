@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import RequireOnboarding from '@/components/RequireOnboarding'
+import RequireSessionServer from '@/components/RequireSessionServer'
 
 export const metadata: Metadata = {
   title: 'My Profile',
@@ -15,5 +16,11 @@ export default function ProfileLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <RequireOnboarding>{children}</RequireOnboarding>
+  return (
+    <RequireSessionServer fallbackFrom="/profile">
+      <RequireOnboarding>
+        {children}
+      </RequireOnboarding>
+    </RequireSessionServer>
+  )
 }

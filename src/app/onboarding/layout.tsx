@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import RequireSessionServer from '@/components/RequireSessionServer'
 
 export const metadata: Metadata = {
   title: 'Onboarding',
@@ -14,5 +15,5 @@ export default function OnboardingLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return <RequireSessionServer fallbackFrom="/onboarding">{children}</RequireSessionServer>
 }

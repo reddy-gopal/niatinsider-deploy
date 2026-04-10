@@ -27,6 +27,7 @@ export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Must match middleware / RequireOnboarding / RequireSessionServer: they all use `from`.
   const nextUrl = searchParams.get('from') ?? '/home';
 
   const phoneDigits = phone.replace(/\D/g, '');
