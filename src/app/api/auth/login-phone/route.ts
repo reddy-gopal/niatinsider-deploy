@@ -1,4 +1,3 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 function getBackendBaseUrl(): string {
@@ -24,21 +23,16 @@ function getSetCookieValues(headers: Headers): string[] {
   return combined.split(/,(?=\s*[A-Za-z0-9_\-]+=)/);
 }
 
-export async function POST(request: NextRequest) {
+/** Phone + OTP login — mirrors cookie behavior of /api/auth/login. */
+export async function POST(request: Request) {
   try {
+    const body = await request.json();
     const backendBaseUrl = getBackendBaseUrl();
-    const refreshToken = request.cookies.get('refresh_token')?.value;
 
-    if (!refreshToken?.trim()) {
-      return NextResponse.json({ detail: 'Refresh token cookie is missing.' }, { status: 400 });
-    }
-
-    const djangoRes = await fetch(`${backendBaseUrl}/api/token/refresh/`, {
+    const djangoRes = await fetch(`${backendBaseUrl}/api/auth/login/phone/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh: refreshToken }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
       cache: 'no-store',
     });
 
@@ -56,10 +50,8 @@ export async function POST(request: NextRequest) {
       .map((cookie) => readCookieValue(cookie, 'refresh_token'))
       .find(Boolean);
     const accessToken = typeof data?.access === 'string' ? data.access : (accessTokenFromCookies ?? null);
-    const rotatedRefreshToken =
-      (typeof data?.refresh === 'string' ? data.refresh : null) ?? refreshTokenFromCookies ?? null;
+    const refreshToken = refreshTokenFromCookies ?? null;
 
-    // Host-only cookies — same notes as login/route.ts (www vs apex canonical host).
     if (accessToken) {
       response.cookies.set('access_token', accessToken, {
         httpOnly: true,
@@ -70,8 +62,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (rotatedRefreshToken) {
-      response.cookies.set('refresh_token', rotatedRefreshToken, {
+    if (refreshToken) {
+      response.cookies.set('refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -82,6 +74,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch {
-    return NextResponse.json({ detail: 'Unable to refresh token.' }, { status: 500 });
+    return NextResponse.json({ detail: 'Unable to process phone OTP login.' }, { status: 500 });
   }
 }

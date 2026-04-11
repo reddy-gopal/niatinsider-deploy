@@ -12,6 +12,13 @@ import { useAuthStore } from "@/store/authStore";
 import { CampusSelector } from "@/components/onboarding/CampusSelector";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import {
+  assertFileUnderMaxBytes,
+  FILE_SIZE_HINT_ID_CARD,
+  FILE_SIZE_HINT_PROFILE_IMAGE,
+  MAX_PROFILE_UPLOAD_FILE_BYTES,
+} from "@/lib/fileUploadLimits";
+import { parseBackendError } from "@/lib/parseBackendError";
 
 const START_YEAR = 2024;
 const currentYear = new Date().getFullYear();
@@ -132,9 +139,21 @@ export default function OnboardingProfilePage() {
     if (!idCardFile) {
       setIdCardError("ID card image is required.");
       hasError = true;
-    } else if (!idCardFile.type.startsWith("image/")) {
-      setIdCardError("Only image files are allowed.");
-      hasError = true;
+    } else {
+      const idTypeOk =
+        idCardFile.type.startsWith("image/") ||
+        idCardFile.type === "application/pdf" ||
+        idCardFile.name.toLowerCase().endsWith(".pdf");
+      if (!idTypeOk) {
+        setIdCardError("Please upload an image (JPG, PNG) or a PDF.");
+        hasError = true;
+      } else {
+        const idSize = assertFileUnderMaxBytes(idCardFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+        if (idSize) {
+          setIdCardError(idSize);
+          hasError = true;
+        }
+      }
     }
     if (!profilePictureFile) {
       setProfilePictureError("Profile picture is required.");
@@ -142,6 +161,12 @@ export default function OnboardingProfilePage() {
     } else if (!profilePictureFile.type.startsWith("image/")) {
       setProfilePictureError("Only image files are allowed.");
       hasError = true;
+    } else {
+      const picSize = assertFileUnderMaxBytes(profilePictureFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+      if (picSize) {
+        setProfilePictureError(picSize);
+        hasError = true;
+      }
     }
     if (!email.trim()) {
       setEmailError("Email is required.");
@@ -192,8 +217,7 @@ export default function OnboardingProfilePage() {
         setError("Selected role is not supported for onboarding.");
       }
     } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(detail ?? "Failed to submit profile. Please try again.");
+      setError(parseBackendError(err));
     } finally {
       setSubmitting(false);
     }
@@ -343,14 +367,41 @@ export default function OnboardingProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="id_card">ID Card (Image)</Label>
+                    <Label htmlFor="id_card">ID Card (Image or PDF)</Label>
                     <Input
                       id="id_card"
                       type="file"
-                      accept="image/*"
-                      onChange={(e) => setIdCardFile(e.target.files?.[0] ?? null)}
+                      accept="image/*,application/pdf,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) {
+                          setIdCardFile(null);
+                          setIdCardError(null);
+                          return;
+                        }
+                        const tooBig = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+                        if (tooBig) {
+                          setIdCardError(tooBig);
+                          e.target.value = "";
+                          setIdCardFile(null);
+                          return;
+                        }
+                        const typeOk =
+                          file.type.startsWith("image/") ||
+                          file.type === "application/pdf" ||
+                          file.name.toLowerCase().endsWith(".pdf");
+                        if (!typeOk) {
+                          setIdCardError("Please upload an image (JPG, PNG) or a PDF.");
+                          e.target.value = "";
+                          setIdCardFile(null);
+                          return;
+                        }
+                        setIdCardFile(file);
+                        setIdCardError(null);
+                      }}
                       className="border-[rgba(30,41,59,0.15)] file:mr-3 file:rounded-md file:border-0 file:bg-[#991b1b]/10 file:px-3 file:py-1.5 file:text-[#991b1b] file:font-medium hover:file:bg-[#991b1b]/20"
                     />
+                    <p className="text-sm text-gray-500">{FILE_SIZE_HINT_ID_CARD}</p>
                     {idCardError && <p className="text-xs text-red-600">{idCardError}</p>}
                   </div>
 
@@ -360,9 +411,32 @@ export default function OnboardingProfilePage() {
                       id="profile_picture"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setProfilePictureFile(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) {
+                          setProfilePictureFile(null);
+                          setProfilePictureError(null);
+                          return;
+                        }
+                        const tooBig = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+                        if (tooBig) {
+                          setProfilePictureError(tooBig);
+                          e.target.value = "";
+                          setProfilePictureFile(null);
+                          return;
+                        }
+                        if (!file.type.startsWith("image/")) {
+                          setProfilePictureError("Only image files are allowed.");
+                          e.target.value = "";
+                          setProfilePictureFile(null);
+                          return;
+                        }
+                        setProfilePictureFile(file);
+                        setProfilePictureError(null);
+                      }}
                       className="border-[rgba(30,41,59,0.15)] file:mr-3 file:rounded-md file:border-0 file:bg-[#991b1b]/10 file:px-3 file:py-1.5 file:text-[#991b1b] file:font-medium hover:file:bg-[#991b1b]/20"
                     />
+                    <p className="text-sm text-gray-500">{FILE_SIZE_HINT_PROFILE_IMAGE}</p>
                     {profilePictureError && <p className="text-xs text-red-600">{profilePictureError}</p>}
                   </div>
                 </>

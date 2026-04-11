@@ -1,12 +1,12 @@
 import useSWR from 'swr';
 import type { CampusListItem } from '../types/campusApi';
-import { authApi } from '../lib/authApi';
+import { api } from '../lib/authApi';
 
 const url = '/campuses/';
 
 async function fetcher(): Promise<CampusListItem[]> {
   try {
-    const res = await authApi.get<CampusListItem[] | unknown>(url, {
+    const res = await api.get<CampusListItem[] | unknown>(url, {
       headers: { Accept: 'application/json' },
       withCredentials: true,
     });

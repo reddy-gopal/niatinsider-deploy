@@ -38,6 +38,7 @@ export interface ApiArticle {
   created_at?: string;
 }
 
+/** Matches Django upvote-status / upvote toggle payloads (`upvote_count`, never `count`). */
 export interface UpvoteStatus {
   upvote_count: number;
   upvoted: boolean;

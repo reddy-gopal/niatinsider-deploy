@@ -20,6 +20,16 @@ export async function POST(_req: Request, { params }: Params) {
     headers,
     cache: 'no-store',
   });
-  const data = await upstream.json().catch(() => ({}));
-  return NextResponse.json(data, { status: upstream.status });
+  const raw = await upstream.json().catch(() => ({}));
+  const r = raw as { upvoted?: unknown; upvote_count?: unknown; count?: unknown };
+  const payload = {
+    upvoted: Boolean(r?.upvoted),
+    upvote_count:
+      typeof r?.upvote_count === 'number'
+        ? r.upvote_count
+        : typeof r?.count === 'number'
+          ? r.count
+          : 0,
+  };
+  return NextResponse.json(payload, { status: upstream.status });
 }

@@ -1,3 +1,10 @@
+/**
+ * NOT Next.js middleware — the app entry is `middleware.ts` at the project root
+ * (auth cookies, `/` → `/home`, protected paths, AMA proxy).
+ *
+ * This module is an optional helper (onboarding redirect experiment) and is not
+ * registered with the framework unless wired manually; safe to ignore for routing.
+ */
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 

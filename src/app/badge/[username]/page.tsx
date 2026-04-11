@@ -35,20 +35,28 @@ export async function generateMetadata(
   const badge = await getBadge(username);
   const title = badge ? `${badge.username} — Verified NIAT Student` : "Verified NIAT Student Badge";
   const pageUrl = badge ? publicBadgePageUrl(badge.username) : `${PUBLIC_SITE_URL}/badge/${encodeURIComponent(username)}`;
-  
-  // TODO: If we later want a real dynamic OG image for LinkedIn unfurl previews, 
-  // we can use Vercel's @vercel/og with Satori to server-render NiatBadgeCard 
-  // as a PNG at /api/og/badge/[username].
-  const imageUrl = "/niat-og-fallback.png";
+  const description =
+    badge?.caption?.trim() ||
+    (badge
+      ? `Verified NIAT Student digital badge for ${badge.username} on NIAT Insider.`
+      : "Verified NIAT Student digital badge on NIAT Insider.");
+  // Absolute raster URL — LinkedIn ignores relative og:image and does not use SVG here.
+  const ogImageUrl = `${PUBLIC_SITE_URL}/og-default.png`;
 
   return {
     title,
+    description,
+    alternates: { canonical: pageUrl },
     openGraph: {
+      type: "website",
+      siteName: "NIAT Insider",
       title,
+      description,
       url: pageUrl,
+      locale: "en_IN",
       images: [
         {
-          url: imageUrl,
+          url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: title,
@@ -58,7 +66,8 @@ export async function generateMetadata(
     twitter: {
       card: "summary_large_image",
       title,
-      images: [imageUrl],
+      description,
+      images: [ogImageUrl],
     },
   };
 }

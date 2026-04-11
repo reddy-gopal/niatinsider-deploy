@@ -26,6 +26,13 @@ import { useAuthStore } from '@/store/authStore';
 import { getMyProfile, upsertIntermediateProfile, upsertNiatProfile } from '@/lib/api/profiles';
 import { API_BASE } from '@/lib/apiBase';
 import NiatBadgeModal from '@/components/NiatBadgeModal';
+import {
+  assertFileUnderMaxBytes,
+  FILE_SIZE_HINT_ID_CARD,
+  FILE_SIZE_HINT_PROFILE_IMAGE,
+  MAX_PROFILE_UPLOAD_FILE_BYTES,
+} from '@/lib/fileUploadLimits';
+import { parseBackendError } from '@/lib/parseBackendError';
 
 const START_YEAR = 2024;
 const currentYear = new Date().getFullYear();
@@ -96,6 +103,7 @@ export default function Profile() {
   const [niatIdCardFile, setNiatIdCardFile] = useState<File | null>(null);
   const [niatIdCardError, setNiatIdCardError] = useState<string | null>(null);
   const [niatIdCardUrl, setNiatIdCardUrl] = useState<string | null>(null);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
 
   const isVerifiedNiatStudent = me?.role === 'verified_niat_student';
   const isNiatStudent = me?.role === 'niat_student';
@@ -169,6 +177,7 @@ export default function Profile() {
     if ((!isVerifiedNiatStudent && !isNiatStudent) || saving) return;
     setNiatIdCardError(null);
     setNiatProfilePictureError(null);
+    setProfileSaveError(null);
     setSaving(true);
     setSaved(false);
     try {
@@ -177,9 +186,27 @@ export default function Profile() {
           setNiatProfilePictureError('Only image files are allowed for profile picture.');
           return;
         }
-        if (niatIdCardFile && !niatIdCardFile.type.startsWith('image/')) {
-          setNiatIdCardError('Only image files are allowed for ID card.');
-          return;
+        if (niatProfilePictureFile) {
+          const picErr = assertFileUnderMaxBytes(niatProfilePictureFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+          if (picErr) {
+            setNiatProfilePictureError(picErr);
+            return;
+          }
+        }
+        if (niatIdCardFile) {
+          const idOk =
+            niatIdCardFile.type.startsWith('image/') ||
+            niatIdCardFile.type === 'application/pdf' ||
+            niatIdCardFile.name.toLowerCase().endsWith('.pdf');
+          if (!idOk) {
+            setNiatIdCardError('Please upload an image (JPG, PNG) or a PDF for ID card.');
+            return;
+          }
+          const idErr = assertFileUnderMaxBytes(niatIdCardFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+          if (idErr) {
+            setNiatIdCardError(idErr);
+            return;
+          }
         }
         const payload = new FormData();
         payload.append('student_id_number', editForm.student_id_number ?? '');
@@ -210,9 +237,27 @@ export default function Profile() {
           setNiatProfilePictureError('Only image files are allowed for profile picture.');
           return;
         }
-        if (niatIdCardFile && !niatIdCardFile.type.startsWith('image/')) {
-          setNiatIdCardError('Only image files are allowed for ID card.');
-          return;
+        if (niatProfilePictureFile) {
+          const picErr = assertFileUnderMaxBytes(niatProfilePictureFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+          if (picErr) {
+            setNiatProfilePictureError(picErr);
+            return;
+          }
+        }
+        if (niatIdCardFile) {
+          const idOk =
+            niatIdCardFile.type.startsWith('image/') ||
+            niatIdCardFile.type === 'application/pdf' ||
+            niatIdCardFile.name.toLowerCase().endsWith('.pdf');
+          if (!idOk) {
+            setNiatIdCardError('Please upload an image (JPG, PNG) or a PDF for ID card.');
+            return;
+          }
+          const idErr = assertFileUnderMaxBytes(niatIdCardFile, MAX_PROFILE_UPLOAD_FILE_BYTES);
+          if (idErr) {
+            setNiatIdCardError(idErr);
+            return;
+          }
         }
         const formData = new FormData();
         formData.append('student_id_number', editForm.student_id_number ?? '');
@@ -250,6 +295,8 @@ export default function Profile() {
         setNiatProfilePictureFile(null);
       }
       setSaved(true);
+    } catch (err: unknown) {
+      setProfileSaveError(parseBackendError(err));
     } finally {
       setSaving(false);
     }
@@ -567,6 +614,11 @@ export default function Profile() {
               </div>
             ) : (
               <form onSubmit={handleSave} className="space-y-4">
+                {profileSaveError && (
+                  <p className="text-sm text-red-600 rounded-md border border-red-200 bg-red-50 px-3 py-2" role="alert">
+                    {profileSaveError}
+                  </p>
+                )}
                 <div>
                   <label id="profile_campus_label" className="block text-sm font-medium text-[#1e293b] mb-1">
                     Campus
@@ -615,10 +667,37 @@ export default function Profile() {
                     <input
                       id="niat_id_card"
                       type="file"
-                      accept="image/*"
-                      onChange={(e) => setNiatIdCardFile(e.target.files?.[0] ?? null)}
+                      accept="image/*,application/pdf,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) {
+                          setNiatIdCardFile(null);
+                          setNiatIdCardError(null);
+                          return;
+                        }
+                        const tooBig = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+                        if (tooBig) {
+                          setNiatIdCardError(tooBig);
+                          e.target.value = '';
+                          setNiatIdCardFile(null);
+                          return;
+                        }
+                        const ok =
+                          file.type.startsWith('image/') ||
+                          file.type === 'application/pdf' ||
+                          file.name.toLowerCase().endsWith('.pdf');
+                        if (!ok) {
+                          setNiatIdCardError('Please upload an image (JPG, PNG) or a PDF.');
+                          e.target.value = '';
+                          setNiatIdCardFile(null);
+                          return;
+                        }
+                        setNiatIdCardFile(file);
+                        setNiatIdCardError(null);
+                      }}
                       className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
                     />
+                    <p className="text-sm text-gray-500 mt-1">{FILE_SIZE_HINT_ID_CARD}</p>
                     {niatIdCardError && (
                       <p className="mt-1 text-xs text-red-600">{niatIdCardError}</p>
                     )}
@@ -642,9 +721,32 @@ export default function Profile() {
                       id="niat_profile_picture"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setNiatProfilePictureFile(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) {
+                          setNiatProfilePictureFile(null);
+                          setNiatProfilePictureError(null);
+                          return;
+                        }
+                        const tooBig = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+                        if (tooBig) {
+                          setNiatProfilePictureError(tooBig);
+                          e.target.value = '';
+                          setNiatProfilePictureFile(null);
+                          return;
+                        }
+                        if (!file.type.startsWith('image/')) {
+                          setNiatProfilePictureError('Only image files are allowed.');
+                          e.target.value = '';
+                          setNiatProfilePictureFile(null);
+                          return;
+                        }
+                        setNiatProfilePictureFile(file);
+                        setNiatProfilePictureError(null);
+                      }}
                       className="w-full px-3 py-2 border border-[rgba(30,41,59,0.2)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#991b1b]"
                     />
+                    <p className="text-sm text-gray-500 mt-1">{FILE_SIZE_HINT_PROFILE_IMAGE}</p>
                     {niatProfilePictureError && (
                       <p className="mt-1 text-xs text-red-600">{niatProfilePictureError}</p>
                     )}

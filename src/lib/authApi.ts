@@ -28,6 +28,10 @@ export const nextAuthApi = axios.create({
 let refreshPromise: Promise<void> | null = null;
 let authFailureHandled = false;
 
+export function getAuthFailureHandled(): boolean {
+  return authFailureHandled;
+}
+
 /** Same join semantics as axios (baseURL + url), so pathname matches the real request. */
 function combineURLs(baseURL: string, relativeURL: string): string {
   const rel = relativeURL.split('?')[0];
@@ -80,6 +84,9 @@ export function shouldSkipAuthRetry(config?: AuthRetryConfig): boolean {
   return (
     /\/token\/refresh\/?$/.test(path) ||
     /\/api\/auth\/refresh\/?$/.test(path) ||
+    /\/api\/auth\/session\/?$/.test(path) ||
+    /\/api\/auth\/token\/?$/.test(path) ||
+    /\/api\/auth\/login-phone\/?$/.test(path) ||
     /\/auth\/logout\/?$/.test(path) ||
     /\/api\/auth\/logout\/?$/.test(path) ||
     /\/auth\/login\/phone-password\/?$/.test(path) ||
@@ -93,14 +100,25 @@ export async function ensureRefreshed(): Promise<void> {
   if (refreshPromise) {
     return refreshPromise;
   }
-  refreshPromise = nextAuthApi
-    .post('/api/auth/refresh', {})
-    .then(() => {
-      authFailureHandled = false;
-    })
-    .finally(() => {
-      refreshPromise = null;
-    });
+  refreshPromise = (async () => {
+    let hasRefresh: boolean | null = null;
+    try {
+      const { data } = await nextAuthApi.get<{ hasRefreshToken?: boolean }>('/api/auth/session', {
+        skipAuthRetry: true,
+      });
+      hasRefresh = Boolean(data?.hasRefreshToken);
+    } catch {
+      hasRefresh = null;
+    }
+    if (hasRefresh === false) {
+      await handleAuthFailureRedirect();
+      throw new Error('No refresh token');
+    }
+    await nextAuthApi.post('/api/auth/refresh', {});
+    authFailureHandled = false;
+  })().finally(() => {
+    refreshPromise = null;
+  });
   return refreshPromise;
 }
 
@@ -231,7 +249,7 @@ export async function requestOtpByPhone(
   phone: string,
   opts?: { for?: 'register' | 'login' }
 ): Promise<{ message: string }> {
-  const body: { phone: string; for?: string } = { phone };
+  const body: { phone_number: string; for?: string } = { phone_number: phone.trim() };
   if (opts?.for) body.for = opts.for;
   const { data } = await api.post<{ message: string }>('/verification/otp/request/', body);
   return data;
@@ -239,7 +257,10 @@ export async function requestOtpByPhone(
 
 /** Verify OTP by phone. */
 export async function verifyOtpByPhone(phone: string, code: string): Promise<{ verified: boolean }> {
-  const { data } = await api.post<{ verified: boolean }>('/verification/otp/verify/', { phone, code });
+  const { data } = await api.post<{ verified: boolean }>('/verification/otp/verify/', {
+    phone_number: phone.trim(),
+    code: code.trim(),
+  });
   return data;
 }
 
@@ -248,9 +269,9 @@ export async function loginByPhoneOtp(
   phone: string,
   code: string
 ): Promise<{ access: string }> {
-  const { data } = await api.post<{ access: string }>('/auth/login/phone/', {
-    phone,
-    code,
+  const { data } = await nextAuthApi.post<{ access: string }>('/api/auth/login-phone', {
+    phone_number: phone.trim(),
+    code: code.trim(),
   });
   return data;
 }
@@ -261,7 +282,7 @@ export async function loginByPhonePassword(
   password: string
 ): Promise<{ access: string }> {
   const { data } = await nextAuthApi.post<{ access: string }>('/api/auth/login', {
-    phone: phone.trim(),
+    phone_number: phone.trim(),
     password,
   });
   return data;
@@ -275,7 +296,12 @@ export async function registerNiatverse(payload: {
 }): Promise<{ id: string; username: string; email: string; phone: string }> {
   const { data } = await api.post<{ id: string; username: string; email: string; phone: string }>(
     '/auth/register/',
-    { ...payload, source: 'niatverse' }
+    {
+      username: payload.username.trim(),
+      phone_number: payload.phone.trim(),
+      password: payload.password,
+      source: 'niatverse',
+    }
   );
   return data;
 }
@@ -285,7 +311,10 @@ export async function loginByUsernamePassword(
   username: string,
   password: string
 ): Promise<{ access: string }> {
-  const { data } = await api.post<{ access: string }>('/token/', { username, password });
+  const { data } = await nextAuthApi.post<{ access: string }>('/api/auth/token', {
+    username: username.trim(),
+    password,
+  });
   return data;
 }
 
@@ -351,7 +380,7 @@ export async function changePassword(payload: {
 
 export async function logout(): Promise<void> {
   try {
-    await nextAuthApi.post('/api/auth/logout', {});
+    await nextAuthApi.post('/api/auth/logout', {}, { skipAuthRetry: true });
   } finally {
     authFailureHandled = false;
     await useAuthStore.getState().clearAuth({ callLogout: false });

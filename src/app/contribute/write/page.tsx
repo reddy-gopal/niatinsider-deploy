@@ -24,6 +24,8 @@ import Footer from '@/components/Footer';
 import { useCampuses } from '@/hooks/useCampuses';
 import { useClubs } from '@/hooks/useClubs';
 import { articleService, type ApiCategory } from '@/lib/articleService';
+import { assertFileUnderMaxBytes, FILE_SIZE_HINT_ARTICLE_EMBED_IMAGE, MAX_PROFILE_UPLOAD_FILE_BYTES } from '@/lib/fileUploadLimits';
+import { parseBackendError } from '@/lib/parseBackendError';
 import { useAuthStore } from '@/store/authStore';
 const STYLE_OPTIONS = [
   { value: 'p', label: 'Normal text' },
@@ -606,10 +608,7 @@ function WriteArticleClientContent() {
         setShowImageModal(false);
       }
     } catch (err: unknown) {
-      const msg = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-        : null;
-      setImageUploadError(msg || 'Upload failed. Try again.');
+      setImageUploadError(parseBackendError(err));
     } finally {
       setImageUploading(false);
     }
@@ -618,6 +617,12 @@ function WriteArticleClientContent() {
   const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const sizeErr = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+    if (sizeErr) {
+      setImageUploadError(sizeErr);
+      e.target.value = '';
+      return;
+    }
     uploadImageFile(file);
     e.target.value = '';
   };
@@ -626,6 +631,11 @@ function WriteArticleClientContent() {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
+    const sizeErr = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+    if (sizeErr) {
+      setImageUploadError(sizeErr);
+      return;
+    }
     uploadImageFile(file);
   };
 
@@ -1145,7 +1155,7 @@ function WriteArticleClientContent() {
                         Click to open file explorer or drop image here
                       </p>
                       <p className="text-xs mt-1" style={{ color: 'rgba(30, 41, 59, 0.5)' }}>
-                        Image is uploaded to the server (article/images/)
+                        {FILE_SIZE_HINT_ARTICLE_EMBED_IMAGE} Images are stored under article/images/.
                       </p>
                     </>
                   )}

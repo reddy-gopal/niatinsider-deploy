@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { API_BASE } from './apiBase';
-import { ensureRefreshed, handleAuthFailureRedirect, shouldSkipAuthRetry } from './authApi';
+import {
+  ensureRefreshed,
+  getAuthFailureHandled,
+  handleAuthFailureRedirect,
+  shouldSkipAuthRetry,
+} from './authApi';
 import type { LeaderboardWriter } from '@/types/articleApi';
 
 /** Base URL: trailing slash so POST 'articles/' -> /api/articles/articles/ */
@@ -18,7 +23,7 @@ articlesApi.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (shouldSkipAuthRetry(original) || original._retry) {
+    if (getAuthFailureHandled() || shouldSkipAuthRetry(original) || original._retry) {
       return Promise.reject(error);
     }
 

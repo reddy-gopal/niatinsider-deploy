@@ -1,4 +1,4 @@
-import { authApi } from './authApi';
+import { nextAuthApi } from './authApi';
 import type { ApiArticle } from '@/types/articleApi';
 
 type AuthorBadge = { type: string; awarded_at: string } | null;
@@ -27,7 +27,9 @@ export interface AuthorArticlesResponse {
 
 export const authorService = {
   getByUsername(username: string, params?: { page?: number; page_size?: number }) {
-    return authApi.get<AuthorArticlesResponse>(`/authors/${encodeURIComponent(username)}/`, { params });
+    return nextAuthApi.get<AuthorArticlesResponse>(`/api/proxy/authors/${encodeURIComponent(username)}/`, {
+      params,
+    });
   },
 };
 

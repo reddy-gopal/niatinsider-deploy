@@ -103,11 +103,14 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [articlesDropdownOpen, profileDropdownOpen]);
 
-  const handleLogout = () => {
-    void logout();
-    setProfileDropdownOpen(false);
-    setMobileMenuOpen(false);
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setProfileDropdownOpen(false);
+      setMobileMenuOpen(false);
+      router.replace('/');
+    }
   };
 
   return (
