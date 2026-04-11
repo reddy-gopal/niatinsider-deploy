@@ -35,7 +35,7 @@ export default function MyArticles() {
     apiCampuses.find((c) => String(c.id) === String(id))?.slug ?? String(id);
   const getArticleHref = (article: { campus_id: string | null; slug: string; status: ArticleStatus }) => {
     const basePath = article.campus_id ? `/${getCampusSlug(article.campus_id)}/article/${article.slug}` : `/article/${article.slug}`;
-    return article.status === 'published' ? basePath : `${basePath}?preview=1`;
+    return article.status === 'published' ? basePath : `${basePath}/preview`;
   };
 
   useEffect(() => {

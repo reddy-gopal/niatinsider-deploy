@@ -107,13 +107,15 @@ export async function ensureRefreshed(): Promise<void> {
 export async function handleAuthFailureRedirect(): Promise<void> {
   if (authFailureHandled) return;
   authFailureHandled = true;
+  const { user, authChecked } = useAuthStore.getState();
   try {
-    await nextAuthApi.post('/api/auth/logout', {});
+    await nextAuthApi.post('/api/auth/logout', {}, { skipAuthRetry: true });
   } catch {
     // Best effort server cleanup.
   }
   await useAuthStore.getState().clearAuth({ callLogout: false });
-  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+  // Guests browsing public pages: optional APIs (e.g. upvote) may 401 — do not hijack to /login.
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login' && authChecked && user !== null) {
     window.location.replace('/login');
   }
 }

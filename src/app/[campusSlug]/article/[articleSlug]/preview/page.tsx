@@ -1,40 +1,35 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
 import { API_BASE } from '@/lib/apiBase';
+import { serverCookieHeader } from '@/lib/serverCookieHeader';
 import type { CampusListItem } from '@/types/campusApi';
 import type { ApiArticle, PaginatedResponse } from '@/types/articleApi';
 import Footer from '@/components/Footer';
 import RelatedArticlesSection from '@/components/RelatedArticlesSection';
 import { mergeRelatedArticles } from '@/lib/mergeRelatedArticles';
-import { getCampusArticleStaticParams } from '@/lib/articleStaticParams';
-import ArticlePageClient from './ArticlePageClient';
+import ArticlePageClient from '../ArticlePageClient';
+
+/** Draft / non-published preview: needs cookies + no-store — cannot be statically generated. */
+export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ campusSlug: string; articleSlug: string }>;
 };
 
-export const dynamicParams = true;
-export const revalidate = 86400;
-
-export async function generateStaticParams() {
-  return getCampusArticleStaticParams();
+export async function generateMetadata(): Promise<Metadata> {
+  return { robots: { index: false, follow: false } };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export default async function CampusArticlePreviewPage({ params }: PageProps) {
   const { campusSlug, articleSlug } = await params;
-  return {
-    alternates: {
-      canonical: `https://www.niatinsider.com/${campusSlug}/article/${articleSlug}`,
-    },
-    robots: { index: true, follow: true },
-  };
-}
 
-export default async function ArticlePage({ params }: PageProps) {
-  const { campusSlug, articleSlug } = await params;
+  const cookieHeader = await serverCookieHeader();
+  const forwardCookies = cookieHeader ? { Cookie: cookieHeader } : undefined;
 
   const campusRes = await fetch(`${API_BASE}/api/campuses/${campusSlug}/`, {
-    next: { revalidate: 86400 },
+    cache: 'no-store',
+    headers: forwardCookies,
   });
   if (!campusRes.ok) {
     notFound();
@@ -44,10 +39,23 @@ export default async function ArticlePage({ params }: PageProps) {
     notFound();
   }
 
-  const articleRes = await fetch(`${API_BASE}/api/articles/articles/${articleSlug}/`, {
-    next: { revalidate: 86400 },
+  const token = (await cookies()).get('access_token')?.value;
+  if (!token) {
+    const from = `/${campusSlug}/article/${articleSlug}/preview`;
+    redirect(`/login?from=${encodeURIComponent(from)}`);
+  }
+
+  const articleRes = await fetch(`${API_BASE}/api/articles/articles/${articleSlug}/preview/`, {
+    cache: 'no-store',
+    headers: {
+      ...forwardCookies,
+      Authorization: `Bearer ${token}`,
+    },
   });
   if (!articleRes.ok) {
+    if (articleRes.status === 401) {
+      redirect('/login');
+    }
     notFound();
   }
   const article = (await articleRes.json()) as ApiArticle | null;
@@ -63,13 +71,15 @@ export default async function ArticlePage({ params }: PageProps) {
   const [primaryRes, latestRes, campusesListRes] = await Promise.all([
     fetch(
       `${API_BASE}/api/articles/articles/?status=published&campus=${encodeURIComponent(String(campusApi.id))}${categoryQuery}&page_size=6`,
-      { next: { revalidate: 3600 } }
+      { cache: 'no-store', headers: forwardCookies }
     ),
     fetch(`${API_BASE}/api/articles/articles/?status=published&page_size=12`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
+      headers: forwardCookies,
     }),
     fetch(`${API_BASE}/api/campuses/`, {
-      next: { revalidate: 86400 },
+      cache: 'no-store',
+      headers: forwardCookies,
     }),
   ]);
 
@@ -90,7 +100,7 @@ export default async function ArticlePage({ params }: PageProps) {
         campusSlug={campusSlug}
         campusName={campusApi.name}
         article={article}
-        previewMessage={undefined}
+        previewMessage={`⚠️ Preview Mode — This article is ${article.status} and not visible to the public.`}
       />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full min-w-0 pb-8 sm:pb-8">
         <RelatedArticlesSection

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { API_BASE } from "@/lib/apiBase";
+import { publicBadgePageUrl } from "@/lib/publicSiteUrl";
 import NiatBadgeCard from "./NiatBadgeCard";
 import BadgeShareButton from "@/app/badge/[username]/BadgeShareButton";
 
@@ -97,10 +98,7 @@ export default function NiatBadgeModal({
               <p className="text-white/70 text-sm mt-1 max-w-xs">Share your verified student credential to build your professional network.</p>
             </div>
             <div className="flex-shrink-0">
-              <BadgeShareButton
-                badgePageUrl={badge.badge_page_url ?? `${API_BASE}/badge/${badge.username}`}
-                caption={badge.caption}
-              />
+              <BadgeShareButton badgePageUrl={publicBadgePageUrl(badge.username)} caption={badge.caption} />
             </div>
           </div>
         )}

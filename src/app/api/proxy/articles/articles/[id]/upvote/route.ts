@@ -6,12 +6,18 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(_req: Request, { params }: Params) {
   const access = (await cookies()).get('access_token')?.value;
-  if (!access) return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
+
+  // Let Django return 401 for anonymous (IsAuthenticated). Do not short-circuit here — that
+  // still triggered the client refresh→logout flow for guests before handleAuthFailureRedirect was fixed.
+  const headers: Record<string, string> = {};
+  if (access) {
+    headers.Authorization = `Bearer ${access}`;
+  }
 
   const upstream = await fetch(`${API_BASE}/api/articles/articles/${encodeURIComponent(id)}/upvote/`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${access}` },
+    headers,
     cache: 'no-store',
   });
   const data = await upstream.json().catch(() => ({}));

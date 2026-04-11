@@ -1284,7 +1284,7 @@ function WriteArticleClientContent() {
             <div className="flex flex-col gap-3">
               {submittedArticleKey != null && (
                 <Link
-                  href={submittedCampusSlug != null ? `/${submittedCampusSlug}/article/${submittedArticleKey}?preview=1` : `/article/${submittedArticleKey}?preview=1`}
+                  href={submittedCampusSlug != null ? `/${submittedCampusSlug}/article/${submittedArticleKey}/preview` : `/article/${submittedArticleKey}/preview`}
                   className="inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#991b1b] text-white font-medium hover:bg-[#b91c1c] transition-colors"
                   onClick={() => setShowSuccessModal(false)}
                 >

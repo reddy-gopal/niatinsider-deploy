@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { API_BASE } from "@/lib/apiBase";
+import { publicBadgePageUrl, PUBLIC_SITE_URL } from "@/lib/publicSiteUrl";
 import BadgeShareButton from "./BadgeShareButton";
 import NiatBadgeCard from "@/components/NiatBadgeCard";
 
@@ -33,7 +34,7 @@ export async function generateMetadata(
   const { username } = await params;
   const badge = await getBadge(username);
   const title = badge ? `${badge.username} — Verified NIAT Student` : "Verified NIAT Student Badge";
-  const pageUrl = badge?.badge_page_url ?? `${API_BASE}/badge/${username}`;
+  const pageUrl = badge ? publicBadgePageUrl(badge.username) : `${PUBLIC_SITE_URL}/badge/${encodeURIComponent(username)}`;
   
   // TODO: If we later want a real dynamic OG image for LinkedIn unfurl previews, 
   // we can use Vercel's @vercel/og with Satori to server-render NiatBadgeCard 
@@ -99,10 +100,7 @@ export default async function BadgePage(
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <BadgeShareButton
-          badgePageUrl={badge.badge_page_url ?? `${API_BASE}/badge/${badge.username}`}
-          caption={badge.caption}
-        />
+        <BadgeShareButton badgePageUrl={publicBadgePageUrl(badge.username)} caption={badge.caption} />
         <p className="text-xs text-gray-500">This badge is publicly shareable</p>
       </div>
     </div>
