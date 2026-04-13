@@ -83,6 +83,11 @@ export const articleService = {
   uploadImage(file: File) {
     const formData = new FormData();
     formData.append('image', file);
-    return nextAuthApi.post<{ url: string }>('/api/articles/upload_image', formData);
+    // nextAuthApi defaults Content-Type to application/json; axios then JSON-stringifies
+    // FormData (see defaults transformRequest: hasJSONContentType ? JSON.stringify(formDataToJSON(data))).
+    // Files become "{}" in the body. Omit Content-Type so the browser sets multipart boundary.
+    return nextAuthApi.post<{ url: string }>('/api/articles/upload_image', formData, {
+      headers: { 'Content-Type': false },
+    });
   },
 };
