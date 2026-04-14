@@ -8,6 +8,13 @@ function getBackendBaseUrl(): string {
   return raw.replace(/\/$/, '');
 }
 
+const cookieConfig = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+};
+
 function readCookieValue(setCookie: string, cookieName: string): string | null {
   const match = setCookie.match(new RegExp(`${cookieName}=([^;]+)`));
   return match?.[1] ?? null;
@@ -36,10 +43,11 @@ export async function POST(request: Request) {
       cache: 'no-store',
     });
 
-    const data = await djangoRes.json().catch(() => ({}));
     if (!djangoRes.ok) {
-      return NextResponse.json(data, { status: djangoRes.status });
+      const errorData = await djangoRes.json().catch(() => ({ error: 'Login failed.' }));
+      return NextResponse.json(errorData, { status: djangoRes.status });
     }
+    const data = await djangoRes.json();
 
     const response = NextResponse.json(data, { status: djangoRes.status });
     const setCookieValues = getSetCookieValues(djangoRes.headers);
@@ -54,26 +62,21 @@ export async function POST(request: Request) {
 
     if (accessToken) {
       response.cookies.set('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+        ...cookieConfig,
         maxAge: 60 * 60 * 24,
       });
     }
 
     if (refreshToken) {
       response.cookies.set('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+        ...cookieConfig,
         maxAge: 60 * 60 * 24 * 7,
       });
     }
 
     return response;
-  } catch {
-    return NextResponse.json({ detail: 'Unable to process token request.' }, { status: 500 });
+  } catch (error) {
+    console.error('[token/route.ts] Unexpected error:', error);
+    return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
   }
 }

@@ -12,6 +12,7 @@ import {
   registerNiatverse,
   loginByUsernamePassword,
 } from '@/lib/authApi';
+import { extractDjangoError } from '@/lib/utils/errors';
 import { useAuthStore } from '@/store/authStore';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -101,17 +102,39 @@ export default function Register() {
     setSubmitError(null);
     setLoading(true);
     try {
-      await registerNiatverse({
-        username: username.trim(),
-        phone: phone.trim(),
-        password,
-      });
-      await loginByUsernamePassword(username.trim(), password);
-      await useAuthStore.getState().bootstrapAuth({ force: true });
-      window.dispatchEvent(new Event('niat:auth'));
-      router.replace('/onboarding/role');
-    } catch (e) {
-      setSubmitError(getErrorMessage(e));
+      try {
+        await registerNiatverse({
+          username: username.trim(),
+          phone: phone.trim(),
+          password,
+        });
+      } catch (error) {
+        const responseData =
+          error && typeof error === 'object' && 'response' in error
+            ? (error as { response?: { data?: Record<string, unknown> } }).response?.data
+            : null;
+        const message = responseData
+          ? extractDjangoError(responseData)
+          : getErrorMessage(error);
+        setSubmitError(message);
+        return;
+      }
+
+      try {
+        await loginByUsernamePassword(username.trim(), password);
+      } catch {
+        setSubmitError('Account created! Please login manually.');
+        router.replace('/login');
+        return;
+      }
+
+      try {
+        await useAuthStore.getState().bootstrapAuth({ force: true });
+        window.dispatchEvent(new Event('niat:auth'));
+        router.replace('/onboarding/role');
+      } catch (e) {
+        setSubmitError(getErrorMessage(e));
+      }
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,13 @@ function getBackendBaseUrl(): string {
   return raw.replace(/\/$/, '');
 }
 
+const cookieConfig = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+};
+
 function readCookieValue(setCookie: string, cookieName: string): string | null {
   const match = setCookie.match(new RegExp(`${cookieName}=([^;]+)`));
   return match?.[1] ?? null;
@@ -56,20 +63,14 @@ export async function POST(request: Request) {
     // you add an explicit domain (e.g. .niatinsider.com) — coordinate with deployment canonical URL.
     if (accessToken) {
       response.cookies.set('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+        ...cookieConfig,
         maxAge: 60 * 60 * 24,
       });
     }
 
     if (refreshToken) {
       response.cookies.set('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+        ...cookieConfig,
         maxAge: 60 * 60 * 24 * 7,
       });
     }

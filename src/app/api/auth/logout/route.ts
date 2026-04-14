@@ -8,21 +8,26 @@ function getBackendBaseUrl(): string {
   return raw.replace(/\/$/, '');
 }
 
+const cookieConfig = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+};
+
 export async function POST(request: Request) {
   const response = NextResponse.json({ detail: 'logged out' });
   // Both must be cleared — leaving refresh_token would keep hasInsiderSessionCookiePair true after "logout".
   response.cookies.set('access_token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    ...cookieConfig,
     maxAge: 0,
   });
   response.cookies.set('refresh_token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    ...cookieConfig,
+    maxAge: 0,
+  });
+  response.cookies.set('niat_needs_onboarding', '', {
+    ...cookieConfig,
     maxAge: 0,
   });
 
