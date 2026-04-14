@@ -22,6 +22,73 @@ export interface ApiSubcategory {
   requires_other: boolean;
 }
 
+export interface PresignedUploadResponse {
+  upload_url: string;
+  public_url: string;
+  key: string;
+}
+
+export async function getPresignedUrl(
+  fileName: string,
+  fileType: string
+): Promise<PresignedUploadResponse> {
+  if (!fileName.trim()) {
+    throw new Error('File name is required for upload.');
+  }
+  const { data } = await nextAuthApi.post<PresignedUploadResponse>(
+    '/api/articles/presigned-upload-url/',
+    {
+      file_name: fileName,
+      file_type: fileType,
+    }
+  );
+  if (!data?.upload_url || !data?.public_url) {
+    throw new Error('Invalid upload metadata returned by server.');
+  }
+  return data;
+}
+
+export async function uploadImageToR2(presignedUrl: string, file: File): Promise<void> {
+  if (!presignedUrl) {
+    throw new Error('Presigned upload URL is missing.');
+  }
+  try {
+    const res = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    });
+    if (!res.ok) {
+      throw new Error(`Image upload failed with status ${res.status}`);
+    }
+    return;
+  } catch {
+    // Some browser extensions intercept/override fetch and can fail cross-origin PUTs.
+    // Fall back to XHR for better compatibility while preserving direct-to-R2 upload.
+  }
+
+  if (typeof XMLHttpRequest === 'undefined') {
+    throw new Error('Image upload failed. Please check your connection and try again.');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', presignedUrl, true);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Image upload failed with status ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => {
+      reject(new Error('Image upload failed. Please check your connection and try again.'));
+    };
+    xhr.send(file);
+  });
+}
+
 export const articleService = {
   list(params?: Record<string, string | number | boolean | undefined>) {
     return articlesApi.get<PaginatedResponse<ApiArticle>>('articles/', { params });
@@ -79,15 +146,5 @@ export const articleService = {
   },
   moderate(id: string | number, payload: ModerationPayload) {
     return nextAuthApi.post<ApiArticle>(`/api/proxy/articles/articles/${id}/moderate`, payload);
-  },
-  uploadImage(file: File) {
-    const formData = new FormData();
-    formData.append('image', file);
-    // nextAuthApi defaults Content-Type to application/json; axios then JSON-stringifies
-    // FormData (see defaults transformRequest: hasJSONContentType ? JSON.stringify(formDataToJSON(data))).
-    // Files become "{}" in the body. Omit Content-Type so the browser sets multipart boundary.
-    return nextAuthApi.post<{ url: string }>('/api/articles/upload_image', formData, {
-      headers: { 'Content-Type': false },
-    });
   },
 };

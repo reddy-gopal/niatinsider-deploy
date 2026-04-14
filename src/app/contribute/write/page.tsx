@@ -23,7 +23,12 @@ import {
 import Footer from '@/components/Footer';
 import { useCampuses } from '@/hooks/useCampuses';
 import { useClubs } from '@/hooks/useClubs';
-import { articleService, type ApiCategory } from '@/lib/articleService';
+import {
+  articleService,
+  getPresignedUrl,
+  uploadImageToR2,
+  type ApiCategory,
+} from '@/lib/articleService';
 import { assertFileUnderMaxBytes, FILE_SIZE_HINT_ARTICLE_EMBED_IMAGE, MAX_PROFILE_UPLOAD_FILE_BYTES } from '@/lib/fileUploadLimits';
 import { parseBackendError } from '@/lib/parseBackendError';
 import { useAuthStore } from '@/store/authStore';
@@ -136,6 +141,7 @@ function WriteArticleClientContent() {
   const [imageModalTab, setImageModalTab] = useState<'upload' | 'url'>('upload');
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [imageUploadWarning, setImageUploadWarning] = useState<string | null>(null);
   const [videoModalTab, setVideoModalTab] = useState<'upload' | 'embed'>('embed');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -598,32 +604,33 @@ function WriteArticleClientContent() {
   };
 
   const uploadImageFile = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) {
+      setImageUploadError('Only image files are allowed.');
+      return;
+    }
     setImageUploadError(null);
+    const sizeWarning = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
+    setImageUploadWarning(sizeWarning);
     setImageUploading(true);
     try {
-      const { data } = await articleService.uploadImage(file);
-      if (data?.url) {
-        addToAttachedImages(data.url);
-        setShowImageModal(false);
-      }
+      const { upload_url, public_url } = await getPresignedUrl(
+        file.name,
+        file.type || 'application/octet-stream'
+      );
+      await uploadImageToR2(upload_url, file);
+      addToAttachedImages(public_url);
+      setShowImageModal(false);
     } catch (err: unknown) {
       setImageUploadError(parseBackendError(err));
     } finally {
       setImageUploading(false);
     }
-  }, []);
+  }, [addToAttachedImages]);
 
   const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const sizeErr = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
-    if (sizeErr) {
-      setImageUploadError(sizeErr);
-      e.target.value = '';
-      return;
-    }
-    uploadImageFile(file);
+    void uploadImageFile(file);
     e.target.value = '';
   };
 
@@ -631,12 +638,7 @@ function WriteArticleClientContent() {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-    const sizeErr = assertFileUnderMaxBytes(file, MAX_PROFILE_UPLOAD_FILE_BYTES);
-    if (sizeErr) {
-      setImageUploadError(sizeErr);
-      return;
-    }
-    uploadImageFile(file);
+    void uploadImageFile(file);
   };
 
   const removeAttachedImage = (id: string) => {
@@ -1131,6 +1133,9 @@ function WriteArticleClientContent() {
                 />
                 {imageUploadError && (
                   <p className="text-sm text-red-600 mb-3">{imageUploadError}</p>
+                )}
+                {imageUploadWarning && !imageUploadError && (
+                  <p className="text-sm text-amber-700 mb-3">{imageUploadWarning}</p>
                 )}
                 <div
                   role="button"
