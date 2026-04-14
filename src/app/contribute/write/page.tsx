@@ -32,6 +32,7 @@ import {
 import { assertFileUnderMaxBytes, FILE_SIZE_HINT_ARTICLE_EMBED_IMAGE, MAX_PROFILE_UPLOAD_FILE_BYTES } from '@/lib/fileUploadLimits';
 import { parseBackendError } from '@/lib/parseBackendError';
 import { useAuthStore } from '@/store/authStore';
+import { sanitizeMediaUrl, sanitizeMediaUrls } from '@/utils/url';
 const STYLE_OPTIONS = [
   { value: 'p', label: 'Normal text' },
   { value: 'h1', label: 'Heading 1' },
@@ -523,8 +524,11 @@ function WriteArticleClientContent() {
         }
         : {};
       const bodyHtml = buildImageCardsHtml(attachedImages) + (bodyContent || '');
-      const images = [...attachedImages.map((i) => i.url), ...extractImageUrlsFromHtml(bodyContent || '')];
-      const coverImage = images[0] || '';
+      const images = sanitizeMediaUrls([
+        ...attachedImages.map((i) => i.url),
+        ...extractImageUrlsFromHtml(bodyContent || ''),
+      ]);
+      const coverImage = sanitizeMediaUrl(images[0] || '');
       const payload = {
         campus_id: safeCampusId,
         campus_name: campusName,
@@ -618,7 +622,11 @@ function WriteArticleClientContent() {
         file.type || 'application/octet-stream'
       );
       await uploadImageToR2(upload_url, file);
-      addToAttachedImages(public_url);
+      const cleanUrl = sanitizeMediaUrl(public_url);
+      if (!cleanUrl) {
+        throw new Error('Upload succeeded but returned an invalid image URL.');
+      }
+      addToAttachedImages(cleanUrl);
       setShowImageModal(false);
     } catch (err: unknown) {
       setImageUploadError(parseBackendError(err));
