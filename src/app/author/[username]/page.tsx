@@ -1,15 +1,10 @@
 import { notFound } from 'next/navigation';
-import { API_BASE } from '@/lib/apiBase';
+import { headers } from 'next/headers';
 import type { AuthorArticlesResponse, ApiAuthorProfile } from '@/lib/authorService';
-import type { ApiArticle } from '@/types/articleApi';
 import AuthorPageClient from './AuthorPageClient';
 
 type PageProps = {
   params: Promise<{ username: string }>;
-};
-
-type AuthorsListResponse = {
-  results?: Array<{ username?: string }>;
 };
 
 export const dynamicParams = true;
@@ -21,17 +16,17 @@ export async function generateStaticParams() {
 export default async function AuthorPage({ params }: PageProps) {
   const { username } = await params;
   const decodedUsername = decodeURIComponent(username);
+  const headerStore = await headers();
+  const proto = headerStore.get('x-forwarded-proto') ?? 'http';
+  const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host');
+  if (!host) {
+    notFound();
+  }
 
-  const [authorRes, articlesRes] = await Promise.all([
-    fetch(`${API_BASE}/api/authors/${encodeURIComponent(decodedUsername)}/`, {
-      cache: 'force-cache',
-      credentials: 'include',
-    }),
-    fetch(`${API_BASE}/api/articles/articles/?status=published&author_username=${encodeURIComponent(decodedUsername)}&page_size=12`, {
-      next: { revalidate: 3600 },
-      credentials: 'include',
-    }),
-  ]);
+  const authorRes = await fetch(
+    `${proto}://${host}/api/proxy/authors/${encodeURIComponent(decodedUsername)}/?page_size=12`,
+    { cache: 'no-store' }
+  );
 
   if (!authorRes.ok) {
     notFound();
@@ -42,18 +37,13 @@ export default async function AuthorPage({ params }: PageProps) {
     notFound();
   }
 
-  const authorArticlesPayload = articlesRes.ok
-    ? (await articlesRes.json()) as { results?: ApiArticle[] } | ApiArticle[] | null
-    : [];
-  const authorArticles = Array.isArray(authorArticlesPayload)
-    ? authorArticlesPayload
-    : (authorArticlesPayload?.results ?? []);
+  const authorArticles = Array.isArray(authorPayload?.articles) ? authorPayload.articles : [];
 
   return (
     <AuthorPageClient
       username={decodedUsername}
       author={author}
-      initialArticles={Array.isArray(authorPayload?.articles) ? authorPayload.articles : authorArticles}
+      initialArticles={authorArticles}
       initialNext={authorPayload?.next ?? null}
     />
   );

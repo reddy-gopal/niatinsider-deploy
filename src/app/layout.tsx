@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "NIAT Insider | The Ultimate Guide to NIAT Campus Life & Admissions",
+    default: "NIAT Insider | The Ultimate Guide to NIAT Campus Life",
     template: "%s | NIAT Insider",
   },
   description:

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ThumbsUp, Clock } from 'lucide-react';
 import type { Article } from '../types';
 import ImageWithFallback from './ImageWithFallback';
+import { getAuthorProfileHref } from '@/lib/authorRoute';
 
 interface ArticleCardProps {
   article: Article;
@@ -13,6 +14,7 @@ interface ArticleCardProps {
 
 export default function ArticleCard({ article, campusSlug }: ArticleCardProps) {
   const articleKey = article.slug || article.id;
+  const authorHref = getAuthorProfileHref(article.author);
   return (
     <Link
       href={`/${campusSlug}/article/${articleKey}`}
@@ -35,7 +37,7 @@ export default function ArticleCard({ article, campusSlug }: ArticleCardProps) {
         <div className="flex items-center justify-between text-xs text-black">
           <div className="flex items-center space-x-3">
             <Link
-              href={`/author/${article.author}`}
+              href={authorHref}
               onClick={(e) => e.stopPropagation()}
               className="hover:text-[#991b1b] transition-colors"
             >
