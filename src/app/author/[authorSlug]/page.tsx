@@ -7,10 +7,8 @@ type PageProps = {
 };
 
 export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  return [];
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function AuthorPage({ params }: PageProps) {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
