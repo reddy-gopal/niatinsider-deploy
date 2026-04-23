@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import type { AuthorArticlesResponse, ApiAuthorProfile } from '@/lib/authorService';
 import AuthorPageClient from '@/app/author/[authorSlug]/AuthorPageClient';
 
@@ -14,19 +13,21 @@ export async function generateStaticParams() {
 }
 
 export default async function AuthorPage({ params }: PageProps) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
   const { authorSlug } = await params;
   const decoded = decodeURIComponent(authorSlug);
-  const headerStore = await headers();
-  const proto = headerStore.get('x-forwarded-proto') ?? 'http';
-  const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host');
-  if (!host) {
-    notFound();
-  }
 
-  const authorRes = await fetch(
-    `${proto}://${host}/api/proxy/authors/slug/${encodeURIComponent(decoded)}/?page_size=12`,
+  let authorRes = await fetch(
+    `${API_BASE}/api/authors/slug/${encodeURIComponent(decoded)}/?page_size=12`,
     { cache: 'no-store' }
   );
+
+  if (!authorRes.ok) {
+    authorRes = await fetch(
+      `${API_BASE}/api/authors/${encodeURIComponent(decoded)}/`,
+      { cache: 'no-store' }
+    );
+  }
 
   if (!authorRes.ok) {
     notFound();
