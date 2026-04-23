@@ -6,6 +6,7 @@ type AuthorBadge = { type: string; awarded_at: string } | null;
 export interface ApiAuthorProfile {
   id: string;
   username: string;
+  profile_slug?: string | null;
   role: string;
   is_verified_senior: boolean;
   follower_count: number;

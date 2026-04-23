@@ -13,7 +13,7 @@ import { ArticleStructuredData } from '@/components/ArticleStructuredData';
 import { CATEGORY_CONFIG } from '@/data/articleCategories';
 import { useUpvote } from '@/hooks/useUpvote';
 import { articleService } from '@/lib/articleService';
-import { getAuthorProfileHref } from '@/lib/authorRoute';
+import { getAuthorProfileHrefByUsername } from '@/lib/authorRoute';
 import { useAuthStore } from '@/store/authStore';
 import type { ApiArticle } from '@/types/articleApi';
 
@@ -53,7 +53,11 @@ export default function ArticlePageClient({
     rejectionReason: apiArticle.rejection_reason,
   };
   const authorLinkedIn = useMemo(() => resolveAuthorLinkedIn(apiArticle), [apiArticle]);
-  const authorHref = useMemo(() => getAuthorProfileHref(apiArticle.author_username), [apiArticle.author_username]);
+  // TODO: switch to profile_slug once this API returns it.
+  const authorHref = useMemo(
+    () => getAuthorProfileHrefByUsername(apiArticle.author_username),
+    [apiArticle.author_username]
+  );
   const categoryConfig = CATEGORY_CONFIG[article.category as keyof typeof CATEGORY_CONFIG];
   const articleIdForEngagement = apiArticle.id;
   const { upvoteCount, upvoted, toggle } = useUpvote(articleIdForEngagement);

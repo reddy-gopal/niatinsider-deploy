@@ -30,6 +30,7 @@ interface ProfilesMeResponse {
   user?: { id?: string; username?: string; phone?: string; phone_number?: string } | null;
   role?: AuthRole;
   is_onboarded?: boolean;
+  niat_review_completed?: boolean;
   profile?: {
     status?: NiatStatus;
     campus_id?: string | number | null;
@@ -42,6 +43,7 @@ export interface AuthState {
   user: AuthUser;
   role: AuthRole;
   isOnboarded: boolean;
+  niat_review_completed: boolean;
   niatStatus: NiatStatus;
   campusId: string | null;
   badge: AuthBadge;
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   role: null,
   isOnboarded: false,
+  niat_review_completed: false,
   niatStatus: null,
   campusId: null,
   badge: null,
@@ -87,6 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       role: null,
       isOnboarded: false,
+      niat_review_completed: false,
       niatStatus: null,
       campusId: null,
       badge: null,
@@ -113,20 +117,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         return data;
       }
 
-      function applyMeResponse(data: ProfilesMeResponse) {
-        const role = data?.role ?? null;
-        const profile = data?.profile ?? null;
+      function applyMeResponse(meResponse: ProfilesMeResponse) {
+        const role = meResponse?.role ?? null;
+        const profile = meResponse?.profile ?? null;
         const campusId =
           profile?.campus?.id != null
             ? String(profile.campus.id)
             : profile?.campus_id != null
               ? String(profile.campus_id)
               : null;
-        const user = data?.user
+        const user = meResponse?.user
           ? {
-              id: String(data.user.id ?? ''),
-              username: String(data.user.username ?? ''),
-              phone: String(data.user.phone ?? data.user.phone_number ?? ''),
+              id: String(meResponse.user.id ?? ''),
+              username: String(meResponse.user.username ?? ''),
+              phone: String(meResponse.user.phone ?? meResponse.user.phone_number ?? ''),
             }
           : null;
         const fallbackUser = role
@@ -140,10 +144,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({
           user: user && user.username ? user : fallbackUser,
           role,
-          isOnboarded: Boolean(data?.is_onboarded),
+          isOnboarded: Boolean(meResponse?.is_onboarded),
+          niat_review_completed: meResponse.niat_review_completed ?? false,
           niatStatus: role === 'niat_student' ? (profile?.status ?? null) : null,
           campusId,
-          badge: data?.badge ?? null,
+          badge: meResponse?.badge ?? null,
           authChecked: true,
         });
       }
@@ -153,6 +158,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           user: null,
           role: null,
           isOnboarded: false,
+          niat_review_completed: false,
           niatStatus: null,
           campusId: null,
           badge: null,
@@ -184,6 +190,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           user: snapshot.user,
           role: snapshot.role,
           isOnboarded: snapshot.isOnboarded,
+          niat_review_completed: snapshot.niat_review_completed,
           niatStatus: snapshot.niatStatus,
           campusId: snapshot.campusId,
           badge: snapshot.badge,

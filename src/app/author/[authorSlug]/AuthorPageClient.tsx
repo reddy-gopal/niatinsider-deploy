@@ -62,7 +62,7 @@ export default function AuthorPageClient({ username, author, initialArticles, in
             </div>
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{author.username ?? username}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{author.username}</h1>
             {/* If this endpoint omits `badge`, this component intentionally renders nothing. */}
             <div className="mb-3">
               <FoundingEditorBadge badge={author.badge ?? null} />

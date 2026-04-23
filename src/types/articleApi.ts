@@ -92,6 +92,7 @@ export interface ModerationPayload {
 
 export interface LeaderboardWriter {
   author_username: string;
+  author_profile_slug: string;
   article_count: number;
   total_views: number;
 }

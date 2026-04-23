@@ -47,8 +47,9 @@ export default function RequireOnboarding({ children }: RequireOnboardingProps) 
     const isPrivilegedRole =
       role === AUTH_ROLES.verifiedNiat || role === AUTH_ROLES.moderator || role === AUTH_ROLES.admin;
     const hasKnownRole = isLearnerRole || isPrivilegedRole;
+    const isReviewPath = pathname === '/onboarding/review' || pathname?.startsWith('/onboarding/review/');
     const needsOnboarding =
-      isAuthenticated && (!hasKnownRole || (isLearnerRole && !isOnboarded));
+      isAuthenticated && (!hasKnownRole || (isLearnerRole && !isOnboarded)) && !isReviewPath;
 
     if (needsOnboarding) {
       setAllowRender(false);

@@ -97,6 +97,10 @@ export default function OnboardingProfilePage() {
   const finalizeOnboarding = async () => {
     await completeOnboarding();
     await bootstrapAuth({ force: true });
+    if (role === "niat_student" || role === "verified_niat_student") {
+      router.push("/onboarding/review");
+      return;
+    }
     router.push("/home");
   };
 

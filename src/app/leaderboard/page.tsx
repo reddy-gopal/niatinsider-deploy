@@ -14,7 +14,8 @@ function pickCampuses(data: CampusListItem[] | { results?: CampusListItem[] } | 
 
 function pickWriters(data: LeaderboardWriter[] | { results?: LeaderboardWriter[] } | null): LeaderboardWriter[] {
   if (!data) return [];
-  return Array.isArray(data) ? data : (data.results ?? []);
+  const rows = Array.isArray(data) ? data : (data.results ?? []);
+  return rows.filter((row) => Boolean(row.author_profile_slug));
 }
 
 export default async function LeaderboardPage({ searchParams }: PageProps) {
@@ -33,18 +34,20 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const campuses = pickCampuses(campusesJson);
 
   const requestedCampusSlug = resolvedSearch?.campus ?? '';
-  const activeCampus = campuses.find((c) => c.slug === requestedCampusSlug) ?? campuses[0] ?? null;
+  const activeCampus = requestedCampusSlug
+    ? campuses.find((c) => c.slug === requestedCampusSlug) ?? null
+    : null;
 
   const [leaderboardRes] = await Promise.all([
-    activeCampus
-      ? fetch(
-          `${API_BASE}/api/articles/articles/leaderboard/?campus_id=${encodeURIComponent(String(activeCampus.id))}`,
-          { next: { revalidate: 3600 }, credentials: 'include' }
-        )
-      : Promise.resolve(null),
+    fetch(
+      activeCampus
+        ? `${API_BASE}/api/articles/articles/leaderboard/?campus_id=${encodeURIComponent(String(activeCampus.id))}`
+        : `${API_BASE}/api/articles/articles/leaderboard/`,
+      { cache: 'no-store', credentials: 'include' }
+    ),
   ]);
 
-  const leaderboardJson = leaderboardRes && leaderboardRes.ok
+  const leaderboardJson = leaderboardRes.ok
     ? (await leaderboardRes.json()) as LeaderboardWriter[] | { results?: LeaderboardWriter[] } | null
     : [];
   const initialLeaderboard = pickWriters(leaderboardJson);

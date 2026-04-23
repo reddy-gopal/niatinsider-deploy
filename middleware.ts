@@ -82,6 +82,7 @@ export const config = {
     '/my-articles',
     '/my-articles/:path*',
     '/onboarding',
+    '/onboarding/review',
     '/onboarding/:path*',
     '/settings',
     '/settings/:path*',

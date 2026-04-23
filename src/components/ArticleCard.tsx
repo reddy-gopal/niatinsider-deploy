@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ThumbsUp, Clock } from 'lucide-react';
 import type { Article } from '../types';
 import ImageWithFallback from './ImageWithFallback';
-import { getAuthorProfileHref } from '@/lib/authorRoute';
+import { getAuthorProfileHrefByUsername } from '@/lib/authorRoute';
 
 interface ArticleCardProps {
   article: Article;
@@ -14,7 +14,8 @@ interface ArticleCardProps {
 
 export default function ArticleCard({ article, campusSlug }: ArticleCardProps) {
   const articleKey = article.slug || article.id;
-  const authorHref = getAuthorProfileHref(article.author);
+  // TODO: switch to profile_slug once this API returns it.
+  const authorHref = getAuthorProfileHrefByUsername(article.author);
   return (
     <Link
       href={`/${campusSlug}/article/${articleKey}`}

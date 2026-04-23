@@ -46,17 +46,17 @@ function normalizeLeaderboardResponse(
   return [];
 }
 
-export async function getLeaderboard(campusId: string): Promise<LeaderboardWriter[]> {
-  if (!campusId) return [];
-
+export async function getLeaderboard(campusId?: string): Promise<LeaderboardWriter[]> {
   const { data } = await articlesApi.get<LeaderboardWriter[] | { results?: LeaderboardWriter[] }>(
     'articles/leaderboard/',
-    { params: { campus_id: campusId } }
+    campusId ? { params: { campus_id: campusId } } : undefined
   );
 
   return normalizeLeaderboardResponse(data)
+    .filter((entry) => Boolean(entry.author_profile_slug))
     .map((entry) => ({
       author_username: entry.author_username,
+      author_profile_slug: entry.author_profile_slug,
       article_count: Number(entry.article_count) || 0,
       total_views: Number(entry.total_views) || 0,
     }))
