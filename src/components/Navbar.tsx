@@ -385,9 +385,6 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   <Link href="/articles" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Articles
                   </Link>
-                    <Link href="/niat-reviews" className="text-black hover:text-black text-sm font-medium transition-colors">
-                      NIAT Reviews
-                    </Link>
                   <Link href="/login" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Login
                   </Link>
