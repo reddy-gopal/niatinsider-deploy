@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { TALK_TO_SENIORS_URL } from '@/lib/talkToSeniorsUrl';
 import { usePublishedArticles } from '../hooks/useArticles';
 import WriteArticleCTA from './WriteArticleCTA';
 
@@ -31,12 +30,6 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               Have questions or stories to share? Join the NIAT Insider student community.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <a
-                href={TALK_TO_SENIORS_URL}
-                className="inline-flex items-center rounded-md bg-[#991b1b] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#7f1d1d] transition-colors"
-              >
-                Ask Seniors
-              </a>
               <WriteArticleCTA
                 label="Write Article"
                 className="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/10 transition-colors"
@@ -73,12 +66,6 @@ export default function Footer({ loadGuides = true }: FooterProps) {
               <Link href="/campuses" className="text-white/60 hover:text-white text-sm transition-colors">Campuses</Link>
               <Link href="/articles" className="text-white/60 hover:text-white text-sm transition-colors">Articles</Link>
               <Link href="/leaderboard" className="text-white/60 hover:text-white text-sm transition-colors">Leaderboard</Link>
-              <a
-                href={TALK_TO_SENIORS_URL}
-                className="text-white/60 hover:text-white text-sm transition-colors"
-              >
-                Talk To Seniors
-              </a>
               <Link href={HOW_TO_GUIDES_URL} className="text-white/60 hover:text-white text-sm transition-colors">How-to Guides</Link>
             </div>
           </div>

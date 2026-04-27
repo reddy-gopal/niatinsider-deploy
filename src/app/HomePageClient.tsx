@@ -8,7 +8,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CampusCard from '../components/CampusCard';
 import VideoCarousel from '../components/VideoCarousel';
-import AskMeAnythingSpotlight from '../components/AskMeAnythingSpotlight';
 import type { Campus } from '../types';
 import type { ApiArticle } from '../types/articleApi';
 import { AUTH_ROLES, useAuthStore } from '@/store/authStore';
@@ -204,7 +203,6 @@ export default function HomePageClient({ campuses, latestArticles, featuredArtic
         </div>
       </section>
 
-      <AskMeAnythingSpotlight />
       <section className="bg-section">
         <VideoCarousel />
       </section>

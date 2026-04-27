@@ -8,7 +8,6 @@ import PublicNavbar from '../components/PublicNavbar';
 import Footer from '../components/Footer';
 import CampusCard from '../components/CampusCard';
 import VideoCarousel from '../components/VideoCarousel';
-import AskMeAnythingSpotlight from '../components/AskMeAnythingSpotlight';
 import type { Campus } from '../types';
 import type { ApiArticle } from '../types/articleApi';
 
@@ -154,7 +153,6 @@ export default function PublicHomeClient({ campuses, latestArticles, featuredArt
         </div>
       </section>
 
-      <AskMeAnythingSpotlight />
       <section className="bg-section">
         <VideoCarousel />
       </section>

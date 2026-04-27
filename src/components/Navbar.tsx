@@ -13,7 +13,6 @@ import type { ApiArticle } from '../types/articleApi';
 import WriteArticleCTA from './WriteArticleCTA';
 import { AUTH_ROLES, WRITE_ENABLED_ROLES, useAuthStore } from '@/store/authStore';
 import { isProtectedAppPath } from '@/lib/protectedPaths';
-import { TALK_TO_SENIORS_URL } from '@/lib/talkToSeniorsUrl';
 import { Spinner } from '@/components/ui/spinner';
 
 interface NavbarProps {
@@ -327,13 +326,6 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     )}
                   </div>
 
-                  <a
-                    href={TALK_TO_SENIORS_URL}
-                    className="text-black hover:text-black text-sm font-medium transition-colors"
-                  >
-                    Talk To Seniors
-                  </a>
-
                   {!hideWriteCtaForRole && (
                     <WriteArticleCTA
                       label="Write Article"
@@ -393,6 +385,9 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                   <Link href="/articles" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Articles
                   </Link>
+                    <Link href="/niat-reviews" className="text-black hover:text-black text-sm font-medium transition-colors">
+                      NIAT Reviews
+                    </Link>
                   <Link href="/login" className="text-black hover:text-black text-sm font-medium transition-colors">
                     Login
                   </Link>
@@ -463,13 +458,6 @@ export default function Navbar({ searchQuery = '', showSearch }: NavbarProps) {
                     >
                       Articles
                     </Link>
-                    <a
-                      href={TALK_TO_SENIORS_URL}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="text-black hover:text-black text-sm font-medium"
-                    >
-                      Talk To Seniors
-                    </a>
                     {!hideWriteCtaForRole && (
                       <div onClick={() => setMobileMenuOpen(false)}>
                         <WriteArticleCTA

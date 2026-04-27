@@ -8,7 +8,6 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import CampusCard from '../../components/CampusCard';
 import VideoCarousel from '../../components/VideoCarousel';
-import AskMeAnythingSpotlight from '../../components/AskMeAnythingSpotlight';
 import NiatBadgeModal from '@/components/NiatBadgeModal';
 import type { Campus } from '../../types';
 import type { ApiArticle } from '../../types/articleApi';
@@ -226,7 +225,6 @@ export default function HomeClient({ campuses, latestArticles, featuredArticles 
         </div>
       </section>
 
-      <AskMeAnythingSpotlight />
       <section className="bg-section">
         <VideoCarousel />
       </section>
