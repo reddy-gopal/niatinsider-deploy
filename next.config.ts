@@ -8,6 +8,7 @@ const nextConfigDir = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  transpilePackages: ['@niat/reviews-ui'],
   turbopack: {
     root: nextConfigDir,
   },
